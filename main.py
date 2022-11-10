@@ -1,9 +1,6 @@
 # KIN BLANDFORD, AUSTIN NEFF
 # LAB 08
 
-# Test Commit
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
@@ -26,10 +23,23 @@ def train_motion(t, y, params):
     Cd = params["Cd"]
     Fp = params["Fp"]
     A = params["A"]
+    Lr = params["Lr"]
+    Rw = params["Rw"]
+    Rg = params["Rg"]
+    Rp = params["Rp"]
+    Mw = params["Mw"]
+    Pg = params["Pg"]
+    Csf = params["Csf"]
 
-    Ft =
+    term_1 = (Rg * Pg * A) / Rw
+    term_2 = (p * Cd * A * (y[1] ** 2)) / 2
+    term_3 = m * g * Crr
+    sum_masses = m + Mw
 
-    acceletation = (Ft - (0.5 * p * Cd * A * (y[1] ** 2)) - (m * g * Crr)) / m
+    #if decelerating:
+    #    term_1 = 0
+
+    acceletation = (term_1 - term_2 - term_3) / sum_masses
     velocity = y[1]
 
     dydt = [velocity, acceletation]
@@ -78,5 +88,5 @@ if __name__ == "__main__":
         • Drag coefβicient: 0.8 (Cd)
         • Rolling resistance coefβicient: 0.03 (Crr)
     """
-    y0 = [0, 0] # pos, vel
+    y0 = [0, 0] # pos, vel, accel(?)
     moving_train()
