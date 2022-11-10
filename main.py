@@ -27,7 +27,9 @@ def train_motion(t, y, params):
     Fp = params["Fp"]
     A = params["A"]
 
-    acceletation = (Fp - (0.5 * p * Cd * A * (y[1] ** 2)) - (m * g * Crr)) / m
+    Ft =
+
+    acceletation = (Ft - (0.5 * p * Cd * A * (y[1] ** 2)) - (m * g * Crr)) / m
     velocity = y[1]
 
     dydt = [velocity, acceletation]
@@ -37,7 +39,7 @@ def train_motion(t, y, params):
 
 def moving_train():
     h = 0.01
-    tspan = np.arange(0.0, 2, h)
+    tspan = np.arange(0.0, 10, h)
     t, y = rk4(odefun, tspan, y0, h, params)
 
     plt.plot(t, y[:, 0], '-b', label='Position')
@@ -59,6 +61,22 @@ def moving_train():
 
 
 if __name__ == "__main__":
-    params = {"g": 9.81, "p": 1, "m": 10, "Crr": 0.002, "Cd": 0.4, "Fp": 1, "A": 0.05}
-    y0 = [0, 0]
+    params = {"g": 9.81, "p": 1, "m": 10, "Crr": 0.003, "Cd": 0.8, "Fp": 1, "A": 0.05, "Lr": 0.1, "Rw": 0.025,
+              "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100e3, "Csf": 0.7}
+    """
+        • Piston stroke length: 0:1 m (Lr)
+        • Wheel radius: 2:5 cm (Rw) (Converted to m)
+        • Gear radius: 1:0 cm (Rg)
+        • Piston radius: 1:0 cm (Rp)
+        • Acceleration of gravity: 9:8 m/s2 (g)
+        • Wheel mass: 0:1 kg (Mw)
+        • Tank gauge pressure: 100 kPa (Pg) (Converted to pa)
+        • Air density: 1:0 kg/m3 (p)
+        • Train mass: 10 kg (m)
+        • Total frontal area of train: 0:05 m2 (A)
+        • Coefβicient of static friction: 0.7 (Csf)
+        • Drag coefβicient: 0.8 (Cd)
+        • Rolling resistance coefβicient: 0.03 (Crr)
+    """
+    y0 = [0, 0] # pos, vel
     moving_train()

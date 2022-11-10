@@ -91,12 +91,4 @@ def rk4(odefun, tspan, y0, h, params):
         for i in range(num_equations):
             y[n+1, i] = y[n, i] + (1.0/6.0) * (k1[i] + (2 * k2[i]) + (2 * k3[i]) + k4[i])
 
-        #print(f"Step: {n}")
-        #print(f"\tTime: {t[n]}")
-        #print(f"\tY: {y[n]} - position, velocity")
-        #print(f"\t\tk1: {2*k1}")
-        #print(f"\t\tk2: {2*k2}")
-        #print(f"\t\tk3: {2*k3}")
-        #print(f"\t\tk4: {2*k4}")
-
     return t, y
