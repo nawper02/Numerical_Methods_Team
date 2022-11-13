@@ -43,14 +43,13 @@ def train_motion(t, y, params):
         accel = False
 
     # For housekeeping
-    term_1 = (Rg * Pg * A) / Rw
+    term_1 = (Rg * Pg * np.pi * Rp * Rp) / Rw
     term_2 = (p * Cd * A * (y[1] ** 2)) / 2
     term_3 = m * g * Crr
     sum_masses = m + Mw
 
     # if in acceleration phase, solve accelerating equations
     if accel:
-
         acceleration = (term_1 - term_2 - term_3) / sum_masses
         velocity = y[1]
 
@@ -58,6 +57,10 @@ def train_motion(t, y, params):
     if not accel:
         acceleration = (- term_2 - term_3) / m
         velocity = y[1]
+
+    if velocity < 0:
+        velocity = 0
+        acceleration = 0
 
     dydt = [velocity, acceleration]
 
@@ -92,16 +95,16 @@ def moving_train():
 
 
 if __name__ == "__main__":
-    params = {"g": 9.81, "p": 1, "m": 10, "Crr": 0.003, "Cd": 0.8, "Fp": 1, "A": 0.05, "Ls": 0.1, "Rw": 0.025,
-              "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100, "Csf": 0.7}
+    params = {"g": 9.81, "p": 1.0, "m": 10.0, "Crr": 0.03, "Cd": 0.8, "Fp": 1, "A": 0.05, "Ls": 0.1, "Rw": 0.025,
+              "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100e3, "Csf": 0.7}
     """
         • Piston stroke length: 0:1 m (Ls)
         • Wheel radius: 2:5 cm (Rw) (Converted to m)
-        • Gear radius: 1:0 cm (Rg)
-        • Piston radius: 1:0 cm (Rp)
+        • Gear radius: 1:0 cm (Rg) (Converted to m)
+        • Piston radius: 1:0 cm (Rp) (Converted to m)
         • Acceleration of gravity: 9:8 m/s2 (g)
         • Wheel mass: 0:1 kg (Mw)
-        • Tank gauge pressure: 100 kPa (Pg) (Left as kPa)
+        • Tank gauge pressure: 100 kPa (Pg) (Converted to Pa)
         • Air density: 1:0 kg/m3 (p)
         • Train mass: 10 kg (m)
         • Total frontal area of train: 0:05 m2 (A)
