@@ -95,19 +95,20 @@ if __name__ == "__main__":
     params = {"g": 9.81, "p": 1.0, "m": 10.0, "Crr": 0.03, "Cd": 0.8, "Fp": 1, "A": 0.05, "Ls": 0.1, "Rw": 0.025,
               "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100e3, "Csf": 0.7}
     """
+        • Acceleration of gravity: 9:8 m/s2 (g)
+        • Air density: 1:0 kg/m3 (p)
+        • Train mass: 10 kg (m)
+        • Rolling resistance coefficient: 0.03 (Crr)
+        • Drag coefficient: 0.8 (Cd)
+        • I have no idea what "Fp" is supposed to be, but it would go here if I knew what it was
+        • Total frontal area of train: 0:05 m2 (A)
         • Piston stroke length: 0:1 m (Ls)
         • Wheel radius: 2:5 cm (Rw) (Converted to m)
         • Gear radius: 1:0 cm (Rg) (Converted to m)
         • Piston radius: 1:0 cm (Rp) (Converted to m)
-        • Acceleration of gravity: 9:8 m/s2 (g)
         • Wheel mass: 0:1 kg (Mw)
         • Tank gauge pressure: 100 kPa (Pg) (Converted to Pa)
-        • Air density: 1:0 kg/m3 (p)
-        • Train mass: 10 kg (m)
-        • Total frontal area of train: 0:05 m2 (A)
-        • Coefβicient of static friction: 0.7 (Csf)
-        • Drag coefβicient: 0.8 (Cd)
-        • Rolling resistance coefβicient: 0.03 (Crr)
+        • Coefficient of static friction: 0.7 (Csf)
     """
     y0 = [0, 0] # pos, vel, accel(?)
     main()
