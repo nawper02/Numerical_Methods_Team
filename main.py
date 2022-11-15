@@ -59,8 +59,8 @@ def train_motion(t, y, params):
         velocity = y[1]
 
     if velocity < 0:
-        velocity = 0
         acceleration = 0
+        velocity = 0
 
     dydt = [velocity, acceleration]
 
@@ -112,5 +112,5 @@ if __name__ == "__main__":
         • Drag coefβicient: 0.8 (Cd)
         • Rolling resistance coefβicient: 0.03 (Crr)
     """
-    y0 = [0, 0] # pos, vel, accel(?)
+    y0 = [0, 0] # pos, vel
     main()
