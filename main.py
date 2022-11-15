@@ -5,8 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
 
-odefun = lambda t, y, params: train_motion(t, y, params)
-
 
 def train_motion(t, y, params):
     """
@@ -73,12 +71,13 @@ def train_motion(t, y, params):
 def main():
     h = 0.01
     tspan = np.arange(0.0, 10, h)
-    t, y = rk4(odefun, tspan, y0, h, params)
+    t, y = rk4(train_motion, tspan, y0, h, params)
 
     plt.plot(t, y[:, 0], '-b', label='Position')
     plt.title('Simulation of a moving train -- position')
     plt.ylabel('Position (m)')
     plt.xlabel('Time (s)')
+    plt.legend(loc='best')
     plt.savefig("position.pdf")
 
     plt.figure()
@@ -86,9 +85,8 @@ def main():
     plt.title('Simulation of a moving train -- velocity')
     plt.ylabel('Velocity (m/s), Position (m)')
     plt.xlabel('Time (s)')
-    plt.savefig("velocity.pdf")
-
     plt.legend(loc='best')
+    plt.savefig("velocity.pdf")
 
     plt.show()
 
