@@ -1,6 +1,5 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
-# LAB 08
-# Push test
+# LAB 08'
 
 import numpy as np
 import matplotlib.pyplot as plt
