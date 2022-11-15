@@ -1,9 +1,6 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
 # LAB 08
 
-
-# New rules test
-
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
@@ -74,7 +71,7 @@ def train_motion(t, y, params):
     return dydt
 
 
-def moving_train():
+def main():
     h = 0.01
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(odefun, tspan, y0, h, params)
@@ -116,4 +113,4 @@ if __name__ == "__main__":
         • Rolling resistance coefβicient: 0.03 (Crr)
     """
     y0 = [0, 0] # pos, vel, accel(?)
-    moving_train()
+    main()
