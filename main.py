@@ -56,8 +56,8 @@ def train_motion(t, y, params):
         velocity = y[1]
 
     if velocity < 0:
-        velocity = 0
         acceleration = 0
+        velocity = 0
 
     dydt = [velocity, acceleration]
 
@@ -110,5 +110,5 @@ if __name__ == "__main__":
         • Tank gauge pressure: 100 kPa (Pg) (Converted to Pa)
         • Coefficient of static friction: 0.7 (Csf)
     """
-    y0 = [0, 0]  # pos, vel, accel(?)
+    y0 = [0, 0] # pos, vel
     main()
