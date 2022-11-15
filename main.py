@@ -1,6 +1,9 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
 # LAB 08
 
+
+# New rules test
+
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
