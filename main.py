@@ -5,8 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
 
-odefun = lambda t, y, params: train_motion(t, y, params)
-
 
 def train_motion(t, y, params):
     """
@@ -52,9 +50,8 @@ def train_motion(t, y, params):
     if accel:
         acceleration = (term_1 - term_2 - term_3) / sum_masses
         velocity = y[1]
-
     # if not in acceleration phase, solve deceleration equations
-    if not accel:
+    else:
         acceleration = (- term_2 - term_3) / m
         velocity = y[1]
 
@@ -74,12 +71,13 @@ def train_motion(t, y, params):
 def main():
     h = 0.01
     tspan = np.arange(0.0, 10, h)
-    t, y = rk4(odefun, tspan, y0, h, params)
+    t, y = rk4(train_motion, tspan, y0, h, params)
 
     plt.plot(t, y[:, 0], '-b', label='Position')
     plt.title('Simulation of a moving train -- position')
     plt.ylabel('Position (m)')
     plt.xlabel('Time (s)')
+    plt.legend(loc='best')
     plt.savefig("position.pdf")
 
     plt.figure()
@@ -87,9 +85,8 @@ def main():
     plt.title('Simulation of a moving train -- velocity')
     plt.ylabel('Velocity (m/s), Position (m)')
     plt.xlabel('Time (s)')
-    plt.savefig("velocity.pdf")
-
     plt.legend(loc='best')
+    plt.savefig("velocity.pdf")
 
     plt.show()
 
@@ -98,19 +95,20 @@ if __name__ == "__main__":
     params = {"g": 9.81, "p": 1.0, "m": 10.0, "Crr": 0.03, "Cd": 0.8, "Fp": 1, "A": 0.05, "Ls": 0.1, "Rw": 0.025,
               "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100e3, "Csf": 0.7}
     """
+        • Acceleration of gravity: 9:8 m/s2 (g)
+        • Air density: 1:0 kg/m3 (p)
+        • Train mass: 10 kg (m)
+        • Rolling resistance coefficient: 0.03 (Crr)
+        • Drag coefficient: 0.8 (Cd)
+        • I have no idea what "Fp" is supposed to be, but it would go here if I knew what it was
+        • Total frontal area of train: 0:05 m2 (A)
         • Piston stroke length: 0:1 m (Ls)
         • Wheel radius: 2:5 cm (Rw) (Converted to m)
         • Gear radius: 1:0 cm (Rg) (Converted to m)
         • Piston radius: 1:0 cm (Rp) (Converted to m)
-        • Acceleration of gravity: 9:8 m/s2 (g)
         • Wheel mass: 0:1 kg (Mw)
         • Tank gauge pressure: 100 kPa (Pg) (Converted to Pa)
-        • Air density: 1:0 kg/m3 (p)
-        • Train mass: 10 kg (m)
-        • Total frontal area of train: 0:05 m2 (A)
-        • Coefβicient of static friction: 0.7 (Csf)
-        • Drag coefβicient: 0.8 (Cd)
-        • Rolling resistance coefβicient: 0.03 (Crr)
+        • Coefficient of static friction: 0.7 (Csf)
     """
     y0 = [0, 0] # pos, vel
     main()
