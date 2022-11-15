@@ -110,5 +110,5 @@ if __name__ == "__main__":
         • Tank gauge pressure: 100 kPa (Pg) (Converted to Pa)
         • Coefficient of static friction: 0.7 (Csf)
     """
-    y0 = [0, 0] # pos, vel, accel(?)
+    y0 = [0, 0]  # pos, vel, accel(?)
     main()
