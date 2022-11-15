@@ -52,9 +52,8 @@ def train_motion(t, y, params):
     if accel:
         acceleration = (term_1 - term_2 - term_3) / sum_masses
         velocity = y[1]
-
     # if not in acceleration phase, solve deceleration equations
-    if not accel:
+    else:
         acceleration = (- term_2 - term_3) / m
         velocity = y[1]
 
