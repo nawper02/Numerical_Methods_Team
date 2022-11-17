@@ -1,6 +1,5 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
 # LAB 08
-import numpy
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
@@ -26,27 +25,27 @@ def train_motion(t, y, params):
     if type(params) == dict:
         Lt = params["Lt"]
         Rt = params["Rt"]
-        density = params["density"]
         P0 = params["P0"]
         Rg = params["Rg"]
         Ls = params["Ls"]
         Rp = params["Rp"]
+        density = params["density"]
     if type(params) == list:
         Lt = params[0]
         Rt = params[1]
-        density = params[2]
-        P0 = params[3]
-        Rg = params[4]
-        Ls = params[5]
-        Rp = params[6]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        density = params[6]
     if type(params) == np.ndarray:
         Lt = params[0]
         Rt = params[1]
-        density = params[2]
-        P0 = params[3]
-        Rg = params[4]
-        Ls = params[5]
-        Rp = params[6]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        density = params[6]
 
     # Compute V0
     V0 = Lt * np.pi * Rp * Rp
@@ -65,7 +64,8 @@ def train_motion(t, y, params):
     A = np.pi * Rt * Rt
 
     # Compute propulsion force
-    Fp = (((P0 * V0) / (V0 + Ap * (Rg / Rw) * y[0])) - Patm) * Ap
+    # Shouldn't subtract Patm BECAUSE we already have gaUge pressure
+    Fp = (((P0 * V0) / (V0 + Ap * (Rg / Rw) * y[0]))) * Ap
 
     # Length of acceleration phase
     La = (Ls * Rw) / Rg
@@ -79,15 +79,19 @@ def train_motion(t, y, params):
         accel = False
 
     # For housekeeping
-    #term_1 = (Rg * Pg * Ap) / Rw
-    term_1_new = ((Rg * Ap) / Rw) * (((P0 * V0) / (V0 + Ap * (Rg / Rw) * y[0])) - Patm)
+    #term_1 = (Rg * 70000 * Ap) / Rw
+    term_1_seg_1 = Ap * Rg / Rw
+    term_1_seg_2 = (P0 * V0) / (V0 + term_1_seg_1 * y[0])
+
+    term_1 = term_1_seg_1 * (term_1_seg_2)
+    #term_1_exponential= (Rg * (P0 * np.exp(-0.1 * t)) * Ap) / Rw
     term_2 = (p * Cd * A * (y[1] ** 2)) / 2
     term_3 = m * g * Crr
     sum_masses = m + Mw
 
     # if in acceleration phase, solve accelerating equations
     if accel:
-        acceleration = (term_1_new - term_2 - term_3) / sum_masses
+        acceleration = (term_1 - term_2 - term_3) / sum_masses
         velocity = y[1]
     # if not in acceleration phase, solve deceleration equations
     else:
@@ -101,8 +105,9 @@ def train_motion(t, y, params):
     dydt = [velocity, acceleration]
 
     Ft = ((Rg * Fp) / Rw) - (Mw * acceleration)
-    if Ft < ((Csf * m * g) / 2):
+    if Ft > ((Csf * m * g) / 2):
         raise Slipped
+        #pass
 
     return dydt
 
@@ -113,12 +118,15 @@ def cost(params):
         tspan = np.arange(0.0, 10, h)
         t, y = rk4(train_motion, tspan, y0, h, params)
     except Slipped:
-        return 100
+        return 101
     if max(y[:, 0]) < 10:
-        return 100
+        return 99
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
+                print(f"\tRun complete, finish time: {t[index]}")
+                if max(y[:, 0]) > 12.5:
+                    return 105
                 return t[index]
 
 
@@ -129,26 +137,41 @@ def fun_der(x, a):
     return np.array([dx, dy])
 
 
-def fun_hess(x, a):
+def fun_hess(x):
     # DUMMY CODE
     dx = 2
     dy = 2
-    return np.diag([dx, dy])
+    return np.zeros((7, 7))
 
 
 def optimize():
     # Create Bounds
     #               Lower Bounds                          Upper Bounds
     #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
-    bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 20000, 0.01, 0.5, 0.04, 8940])
+    bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 200000, 0.01, 0.5, 0.04, 8940])
 
     # Initial Parameters
-    #             Lt    Rt    P0     Rg     Ls   Rp   dens
-    x0 = np.array([0.25, 0.1, 70000, 0.01, 0.1, 0.01, 5000])
+    #             Lt     Rt     P0     Rg     Ls   Rp     dens
+    x0 = np.array([0.25, 0.115, 150000, 0.005, 0.3, 0.032, 8000])
+
+
+    #x0 = np.array([0.25, 0.1, 70e3, 0.01, 0.1, 0.01, 2700])
+    # Optimized parameters:
+    # 	Lt: 0.25
+    # 	Rt: 0.1249595627400744
+    # 	P0: 70001.1378918479
+    # 	Rg: 0.006000000432202432
+    # 	Ls: 0.29618432890077256
+    # 	Rp: 0.029999916034144307
 
     # May not need jac or hess for this
-    #res = minimize(cost, x0, method='trust-constr', jac=fun_der, hess=fun_hess, options={'verbose': 1}, bounds=bounds)
+    # res = minimize(cost, x0, method='trust-constr', hess=fun_hess, options={'verbose': 1}, bounds=bounds)
+
+    print("Starting optimization...")
+    #res = minimize(cost, x0, method='trust-constr', hess=fun_hess, options={'verbose': 1, 'gtol': 1e-16}, bounds=bounds)
     res = minimize(cost, x0, method='trust-constr', options={'verbose': 1}, bounds=bounds)
+    #res = minimize(cost, x0, method='Nelder-Mead', options={'disp': True, 'maxiter': 1000, 'adaptive': True}, bounds=bounds)
+    print("Optimization complete.")
     return res
 
 
@@ -161,12 +184,18 @@ def main():
     print(f"\tRg: {res.x[3]}")
     print(f"\tLs: {res.x[4]}")
     print(f"\tRp: {res.x[5]}")
+    print(f"\tdensity: {res.x[6]}")
     print(f"Optimized cost (time): {res.fun}")
-
+    print(f"Copyable: {res.x.tolist()}")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
-    t, y = rk4(train_motion, tspan, y0, h, res.x)
+    try:
+        t, y = rk4(train_motion, tspan, y0, h, res.x)
+        #x0 = [0.25, 0.115, 70000, 0.005, 0.3, 0.032, 8000]
+        #t, y = rk4(train_motion, tspan, y0, h, x0)
+    except Slipped:
+        print("Train slipped")
 
     plt.plot(t, y[:, 0], '-b', label='Position')
     plt.title('Simulation of a moving train -- position')
@@ -204,7 +233,6 @@ if __name__ == "__main__":
     Csf = 0.7           # -
     Rw = 0.025          # m
     Mw = 0.1            # kg
-
 
     """
         • Acceleration of gravity: 9:8 m/s2 (g)
