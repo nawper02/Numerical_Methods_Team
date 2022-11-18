@@ -13,6 +13,12 @@ class Slipped(Exception):
     pass
 
 
+class Res(object):
+    def __init__(self, params, time):
+        self.x = params
+        self.fun = time
+
+
 def train_motion(t, y, params):
     """
     t: current time (seconds)
@@ -124,24 +130,16 @@ def cost(params):
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
-                print(f"\tRun complete, finish time: {t[index]}")
+                #print(f"\tRun complete, finish time: {t[index]}")
                 if max(y[:, 0]) > 12.5:
                     return 105
                 return t[index]
 
 
-def fun_der(x, a):
-    # DUMMY CODE
-    dx = 2 * (x[0] - 1)
-    dy = 2 * (x[1] - a)
-    return np.array([dx, dy])
+def create_options_from_bounds(bounds, num_steps):
+    options = np.linspace(bounds[0], bounds[1], num_steps)
+    return options
 
-
-def fun_hess(x):
-    # DUMMY CODE
-    dx = 2
-    dy = 2
-    return np.zeros((7, 7))
 
 
 def optimize():
@@ -150,28 +148,53 @@ def optimize():
     #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
     bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 200000, 0.01, 0.5, 0.04, 8940])
 
-    # Initial Parameters
-    #             Lt     Rt     P0     Rg     Ls   Rp     dens
-    x0 = np.array([0.25, 0.115, 150000, 0.005, 0.3, 0.032, 8000])
+    # Create bounds for each parameter
+    Lt_bounds = (0.2, 0.3)
+    Rt_bounds = (0.05, 0.2)
+    P0_bounds = (70000, 200000)
+    Rg_bounds = (0.002, 0.01)
+    Ls_bounds = (0.1, 0.5)
+    Rp_bounds = (0.02, 0.04)
+    density_bounds = (1200, 8940)
 
+    time_list = []
+    params_list = []
+    best_params = None
+    best_time = None
+    for trial in range(2888):
+        # Ramdomize Parameters
 
-    #x0 = np.array([0.25, 0.1, 70e3, 0.01, 0.1, 0.01, 2700])
-    # Optimized parameters:
-    # 	Lt: 0.25
-    # 	Rt: 0.1249595627400744
-    # 	P0: 70001.1378918479
-    # 	Rg: 0.006000000432202432
-    # 	Ls: 0.29618432890077256
-    # 	Rp: 0.029999916034144307
+        Lt = random_param(Lt_bounds)
+        Rt = random_param(Rt_bounds)
+        P0 = random_param(P0_bounds)
+        Rg = random_param(Rg_bounds)
+        Ls = random_param(Ls_bounds)
+        Rp = random_param(Rp_bounds)
+        dens = random_param(density_bounds)
 
-    # May not need jac or hess for this
-    # res = minimize(cost, x0, method='trust-constr', hess=fun_hess, options={'verbose': 1}, bounds=bounds)
+        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
+        params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
 
-    print("Starting optimization...")
-    #res = minimize(cost, x0, method='trust-constr', hess=fun_hess, options={'verbose': 1, 'gtol': 1e-16}, bounds=bounds)
-    res = minimize(cost, x0, method='trust-constr', options={'verbose': 1}, bounds=bounds)
-    #res = minimize(cost, x0, method='Nelder-Mead', options={'disp': True, 'maxiter': 1000, 'adaptive': True}, bounds=bounds)
-    print("Optimization complete.")
+        time_list.append(cost(params))
+        params_list.append(params)
+
+        if time_list[-1] == min(time_list):
+            best_params = params_list[-1]
+            best_time = time_list[-1]
+
+            print(f"Best parameters so far:")
+            print(f"\tLt: {best_params[0]}")
+            print(f"\tRt: {best_params[1]}")
+            print(f"\tP0: {best_params[2]}")
+            print(f"\tRg: {best_params[3]}")
+            print(f"\tLs: {best_params[4]}")
+            print(f"\tRp: {best_params[5]}")
+            print(f"\tdensity: {best_params[6]}")
+            print(f"Optimized cost (time): {best_time}")
+            print(f"Copyable: {best_params.tolist()}\n")
+    else:
+        res = Res(best_params, best_time)
+
     return res
 
 
@@ -185,8 +208,8 @@ def main():
     print(f"\tLs: {res.x[4]}")
     print(f"\tRp: {res.x[5]}")
     print(f"\tdensity: {res.x[6]}")
-    print(f"Optimized cost (time): {res.fun}")
-    print(f"Copyable: {res.x.tolist()}")
+    print(f"Copyable: {list(res.x)}")
+    print(f"Optimized cost (time): {res.fun}\n")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -197,28 +220,12 @@ def main():
     except Slipped:
         print("Train slipped")
 
-    plt.plot(t, y[:, 0], '-b', label='Position')
-    plt.title('Simulation of a moving train -- position')
-    plt.ylabel('Position (m)')
-    plt.xlabel('Time (s)')
-    plt.legend(loc='best')
-    plt.savefig("position.pdf")
-
-    plt.figure()
-    plt.plot(t, y[:, 1], '-r', label='Velocity')
-    plt.title('Simulation of a moving train -- velocity')
-    plt.ylabel('Velocity (m/s), Position (m)')
-    plt.xlabel('Time (s)')
-    plt.legend(loc='best')
-    plt.savefig("velocity.pdf")
+    plt.savefig("combined.pdf")
 
     plt.show()
 
 
 if __name__ == "__main__":
-    #params = {"g": 9.81, "p": 1.0, "m": 10.0, "Crr": 0.03, "Cd": 0.8, "Fp": 1, "A": 0.05, "Ls": 0.1, "Rw": 0.025,
-    #          "Rg": 0.01, "Rp": 0.01, "Mw": 0.1, "Pg": 100e3, "Csf": 0.7, "P0": 70e3, "Lt": 0.25, "mat_dens": 2700}
-
     # Initialize design parameters (to optimize)
     design_params = {"Lt": 0.25, "Rt": 0.1, "density": 2700, "P0": 70e3, "Rg": 0.01, "Ls": 0.1, "Rp": 0.01}
     #                     Lt    Rt    dens   P0   Rg    Ls   Rp
@@ -273,3 +280,13 @@ if __name__ == "__main__":
     """
     y0 = [0, 0] # pos, vel
     main()
+    # 5.72
+    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895, 0.02969740379346559, 5508.651741337037]
+    # 5.659
+    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422, 0.03554130090484798, 3911.1736625844583]
+    # 5.67
+    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685, 0.029086120013843354, 2204.6409017118917]
+    # 5.73
+    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726, 0.03338539866008866, 3835.046508285344]
+    # 5.72
+    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863, 0.02868447929729715, 1630.0399232167974]
