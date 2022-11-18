@@ -3,10 +3,14 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+<<<<<<< Updated upstream
 from scipy.optimize import Bounds, minimize
 
+=======
+>>>>>>> Stashed changes
 from rk4 import rk4
-from train_motion import train_motion, Slipped
+from train_motion import train_motion
+from optimize_method import optimize, local_optimize
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -14,6 +18,7 @@ from train_motion import train_motion, Slipped
 #  - Run optimization again
 
 
+<<<<<<< Updated upstream
 class Res(object):
     def __init__(self, params, time):
         # store params into dictionary x
@@ -155,6 +160,8 @@ def local_optimize(params, num_trials, dist):
     return res
 
 
+=======
+>>>>>>> Stashed changes
 def main():
     # Initialize bounds
     Lt_bounds = (0.2, 0.3)
@@ -179,20 +186,23 @@ def main():
 
     res = optimize(params_bounds, num_trials)
     print("Completed coarse optimization, beginning local optimization")
+<<<<<<< Updated upstream
     res = local_optimize(res.x, num_trials, 0.01)
+=======
+    res = local_optimize(res.x, num_trials, 0.1)
+>>>>>>> Stashed changes
     print("Local optimization complete.")
 
-
     print(f"Final parameters:")
-    print(f"\tLt: {res.x[0]}")
-    print(f"\tRt: {res.x[1]}")
-    print(f"\tP0: {res.x[2]}")
-    print(f"\tRg: {res.x[3]}")
-    print(f"\tLs: {res.x[4]}")
-    print(f"\tRp: {res.x[5]}")
-    print(f"\tdensity: {res.x[6]}")
-    print(f"Copyable: {list(res.x)}")
-    print(f"Optimized cost (time): {res.time}\n")
+    print(f"\tLt: {res.x['Lt']}")
+    print(f"\tRt: {res.x['Rt']}")
+    print(f"\tP0: {res.x['P0']}")
+    print(f"\tRg: {res.x['Rg']}")
+    print(f"\tLs: {res.x['Ls']}")
+    print(f"\tRp: {res.x['Rp']}")
+    print(f"\tdensity: {res.x['dens']}")
+    print(f"Final Optimized time: {res.time}")
+    print(f"Copyable: {res.list}")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -229,8 +239,6 @@ if __name__ == "__main__":
     Csf = 0.7           # -
     Rw = 0.025          # m
     Mw = 0.1            # kg
-
-    # Initialize initial conditions
     y0 = [0, 0]  # pos, vel
 
     # Run main
@@ -277,23 +285,39 @@ if __name__ == "__main__":
     # 5.72
     # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895,
     # 0.02969740379346559, 5508.651741337037]
+
     # 5.659
     # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422,
     # 0.03554130090484798, 3911.1736625844583]
+
     # 5.67
     # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685,
     # 0.029086120013843354, 2204.6409017118917]
+
     # 5.73
     # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726,
     # 0.03338539866008866, 3835.046508285344]
+
     # 5.72
     # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863,
     # 0.02868447929729715, 1630.0399232167974]
+
     # 5.58
     # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315,
     # 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
-    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
+
+    # unknown time
+    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456,
+    # 0.024947758891551694, 1469.2146204772644]
+
     # 5.6699999999999235
-    # [0.19739815303094518, 0.09346809312765124, 169667.59784325594, 0.004126413728920994, 0.3275365103149462, 0.0327935037139186, 8462.017978586722]
+    # [0.19739815303094518, 0.09346809312765124, 169667.59784325594, 0.004126413728920994, 0.3275365103149462,
+    # 0.0327935037139186, 8462.017978586722]
+
     # 5.649999999999924
-    # [0.1919382517333743, 0.0893634089702165, 97938.03198283388, 0.004948947886315307, 0.40893735489112343, 0.028672510065196756, 3438.3636208460707]
+    # [0.1919382517333743, 0.0893634089702165, 97938.03198283388, 0.004948947886315307, 0.40893735489112343,
+    # 0.028672510065196756, 3438.3636208460707]
+
+    # 5.569999999999926
+    # [0.27185975586418787, 0.07226214955804353, 105810.88670226459, 0.002660184276023843, 0.14686578163436,
+    # 0.025537158491719152, 7083.541559707305]
