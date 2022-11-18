@@ -6,6 +6,7 @@ def rk4(odefun, tspan, y0, h, params):
 
         Parameters
         ----------
+
         odefun : callable
             A callable function to the derivative function defining the system.
         tspan : array_like
@@ -17,6 +18,10 @@ def rk4(odefun, tspan, y0, h, params):
             odefun.  Must be the same size as that expected for the
             second input of odefun.
         h : step size
+        params : array_like
+            Array containing the parameters to be used in evaluating the
+            odefun.  Must be the same size as that expected for the
+            third input of odefun.
 
         Returns
         -------
@@ -59,7 +64,9 @@ def rk4(odefun, tspan, y0, h, params):
 
         for j in range(num_equations):
             # Compute k1 for all equations
-            dydt = odefun(t[n], y[n], params)
+            dydt, slipFlag = odefun(t[n], y[n], params)
+            if slipFlag:
+                return t, slipFlag
             k1[j] = h * dydt[j]
 
         for j in range(num_equations):
@@ -67,7 +74,9 @@ def rk4(odefun, tspan, y0, h, params):
             input_y = y[n].copy()
             for index, element in enumerate(y[n]):
                 input_y[index] += 0.5 * k1[index]
-            dydt = odefun(t[n] + (h/2), input_y, params)
+            dydt, slipFlag = odefun(t[n] + (h/2), input_y, params)
+            if slipFlag:
+                return t, slipFlag
             k2[j] = h * dydt[j]
 
         for j in range(num_equations):
@@ -75,7 +84,9 @@ def rk4(odefun, tspan, y0, h, params):
             input_y = y[n].copy()
             for index, element in enumerate(y[n]):
                 input_y[index] += 0.5 * k2[index]
-            dydt = odefun(t[n] + (h/2), input_y, params)
+            dydt, slipFlag = odefun(t[n] + (h/2), input_y, params)
+            if slipFlag:
+                return t, slipFlag
             k3[j] = h * dydt[j]
 
         for j in range(num_equations):
@@ -83,7 +94,9 @@ def rk4(odefun, tspan, y0, h, params):
             input_y = y[n].copy()
             for index, element in enumerate(y[n]):
                 input_y[index] += k3[index]
-            dydt = odefun(t[n] + h, input_y, params)
+            dydt, slipFlag = odefun(t[n] + h, input_y, params)
+            if slipFlag:
+                return t, slipFlag
             k4[j] = h * dydt[j]
 
         # Calculate the next state

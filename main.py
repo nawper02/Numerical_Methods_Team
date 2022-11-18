@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
 from train_motion import train_motion
-from optimize_method import optimize, local_optimize
+from optimize_method import optimize, local_optimize, new_optimization_method
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -23,6 +23,17 @@ def main():
     Rp_bounds = (0.02, 0.04)
     dens_bounds = (1200, 8940)
 
+    # Initialize params dict to be in between bounds
+    params = {
+        "Lt": (Lt_bounds[0] + Lt_bounds[1]) / 2,
+        "Rt": (Rt_bounds[0] + Rt_bounds[1]) / 2,
+        "P0": P0_bounds[1],
+        "Rg": (Rg_bounds[0] + Rg_bounds[1]) / 2,
+        "Ls": (Ls_bounds[0] + Ls_bounds[1]) / 2,
+        "Rp": (Rp_bounds[0] + Rp_bounds[1]) / 2,
+        "dens": (dens_bounds[0] + dens_bounds[1]) / 2
+    }
+
     # Make params_bounds dictionary
     params_bounds = {
         "Lt": Lt_bounds,
@@ -35,10 +46,16 @@ def main():
 
     num_trials = 1000
 
-    res = optimize(params_bounds, num_trials)
-    print("Completed coarse optimization, beginning local optimization")
-    res = local_optimize(res.x, num_trials, .01)
-    print("Local optimization complete.")
+    # Run optimization
+    scipyWorking = False
+
+    if scipyWorking:
+        res = new_optimization_method(params, params_bounds, .01)
+    else:
+        res = optimize(params_bounds, num_trials)
+        print("Completed coarse optimization, beginning local optimization")
+        res = local_optimize(res.x, num_trials, .01)
+        print("Local optimization complete.")
 
     print(f"Final parameters:")
     print(f"\tLt: {res.x['Lt']}")
