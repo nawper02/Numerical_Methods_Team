@@ -161,7 +161,76 @@ def optimize():
     params_list = []
     best_params = None
     best_time = None
-    for trial in range(2888):
+    for trial in range(1000):
+        # Ramdomize Parameters
+
+        Lt = random_param(Lt_bounds)
+        Rt = random_param(Rt_bounds)
+        P0 = random_param(P0_bounds)
+        Rg = random_param(Rg_bounds)
+        Ls = random_param(Ls_bounds)
+        Rp = random_param(Rp_bounds)
+        dens = random_param(density_bounds)
+
+        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
+        params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+
+        time_list.append(cost(params))
+        params_list.append(params)
+
+        if time_list[-1] == min(time_list):
+            best_params = params_list[-1]
+            best_time = time_list[-1]
+
+            print(f"Best parameters so far:")
+            print(f"\tLt: {best_params[0]}")
+            print(f"\tRt: {best_params[1]}")
+            print(f"\tP0: {best_params[2]}")
+            print(f"\tRg: {best_params[3]}")
+            print(f"\tLs: {best_params[4]}")
+            print(f"\tRp: {best_params[5]}")
+            print(f"\tdensity: {best_params[6]}")
+            print(f"Optimized cost (time): {best_time}")
+            print(f"Copyable: {best_params.tolist()}\n")
+    else:
+        res = Res(best_params, best_time)
+
+    return res
+
+
+def local_optimize(params):
+    # Create local bounds for each parameter
+    dist = 0.1
+
+    Lt = params[0]
+    Rt = params[1]
+    P0 = params[2]
+    Rg = params[3]
+    Ls = params[4]
+    Rp = params[5]
+    dens = params[6]
+
+    Lt_s = dist * Lt
+    Rt_s = dist * Rt
+    P0_s = dist * P0
+    Rg_s = dist * Rg
+    Ls_s = dist * Ls
+    Rp_s = dist * Rp
+    dens_s = dist * dens
+
+    Lt_bounds = (Lt-Lt_s, Lt+Lt_s)
+    Rt_bounds = (Rt-Rt_s, Rt+Rt_s)
+    P0_bounds = (P0-P0_s, P0+P0_s)
+    Rg_bounds = (Rg-Rg_s, Rg+Rg_s)
+    Ls_bounds = (Ls-Ls_s, Ls+Ls_s)
+    Rp_bounds = (Rp-Rp_s, Rp+Rp_s)
+    density_bounds = (dens-dens_s, dens+dens_s)
+
+    time_list = []
+    params_list = []
+    best_params = None
+    best_time = None
+    for trial in range(1000):
         # Ramdomize Parameters
 
         Lt = random_param(Lt_bounds)
@@ -290,3 +359,5 @@ if __name__ == "__main__":
     # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726, 0.03338539866008866, 3835.046508285344]
     # 5.72
     # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863, 0.02868447929729715, 1630.0399232167974]
+    # 5.58
+    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
