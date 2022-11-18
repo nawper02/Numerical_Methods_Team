@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
-from scipy.optimize import Bounds, minimize
+from train_motion import train_motion, Slipped
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -12,115 +12,10 @@ from scipy.optimize import Bounds, minimize
 #  - Run optimization again
 
 
-
-class Slipped(Exception):
-    pass
-
-
 class Res(object):
     def __init__(self, params, time):
         self.x = params
         self.fun = time
-
-
-def train_motion(t, y, params):
-    """
-    t: current time (seconds)
-    y: current state [position, velocity]
-    params: dictionary of parameters that influence motion
-    returns: dydt, [velocity, acceleration]
-    """
-
-    # Unpack parameters
-    if type(params) == dict:
-        Lt = params["Lt"]
-        Rt = params["Rt"]
-        P0 = params["P0"]
-        Rg = params["Rg"]
-        Ls = params["Ls"]
-        Rp = params["Rp"]
-        density = params["density"]
-    if type(params) == list:
-        Lt = params[0]
-        Rt = params[1]
-        P0 = params[2]
-        Rg = params[3]
-        Ls = params[4]
-        Rp = params[5]
-        density = params[6]
-    if type(params) == np.ndarray:
-        Lt = params[0]
-        Rt = params[1]
-        P0 = params[2]
-        Rg = params[3]
-        Ls = params[4]
-        Rp = params[5]
-        density = params[6]
-
-    # Compute V0
-    V0 = Lt * np.pi * Rp * Rp
-
-    # Compute mass of train
-
-    pp = 1250
-    Lp = 1.5 * Ls
-    mp = pp * np.pi * pow(Rp, 2) * Lp
-    mt = density * Lp * np.pi * ((Rt**2) - pow(Rt/1.15, 2))
-    m = mp + mt
-
-    # Area of the piston head
-    Ap = np.pi * Rp * Rp
-
-    # Compute frontal area of train
-    A = np.pi * Rt * Rt
-
-    # Compute propulsion force
-    # Shouldn't subtract Patm BECAUSE we already have gaUge pressure
-    Fp = (((P0 * V0) / (V0 + Ap * (Rg / Rw) * y[0]))) * Ap
-
-    # Length of acceleration phase
-    La = (Ls * Rw) / Rg
-
-    # If in acceleration phase
-    if y[0] < La:
-        # Is accelerating
-        accel = True
-    else:
-        # Is decelerating
-        accel = False
-
-    # For housekeeping
-    #term_1 = (Rg * 70000 * Ap) / Rw
-    term_1_seg_1 = Ap * Rg / Rw
-    term_1_seg_2 = (P0 * V0) / (V0 + term_1_seg_1 * y[0])
-
-    term_1 = term_1_seg_1 * (term_1_seg_2)
-    #term_1_exponential= (Rg * (P0 * np.exp(-0.1 * t)) * Ap) / Rw
-    term_2 = (p * Cd * A * (y[1] ** 2)) / 2
-    term_3 = m * g * Crr
-    sum_masses = m + Mw
-
-    # if in acceleration phase, solve accelerating equations
-    if accel:
-        acceleration = (term_1 - term_2 - term_3) / sum_masses
-        velocity = y[1]
-    # if not in acceleration phase, solve deceleration equations
-    else:
-        acceleration = (- term_2 - term_3) / m
-        velocity = y[1]
-
-    if velocity < 0:
-        acceleration = 0
-        velocity = 0
-
-    dydt = [velocity, acceleration]
-
-    Ft = ((Rg * Fp) / Rw) - (Mw * acceleration)
-    if Ft > ((Csf * m * g) / 2):
-        raise Slipped
-        #pass
-
-    return dydt
 
 
 def cost(params):
@@ -135,15 +30,9 @@ def cost(params):
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
-                #print(f"\tRun complete, finish time: {t[index]}")
                 if max(y[:, 0]) > 12.5:
                     return 105
                 return t[index]
-
-
-def create_options_from_bounds(bounds, num_steps):
-    options = np.linspace(bounds[0], bounds[1], num_steps)
-    return options
 
 
 def random_param(bounds):
@@ -227,7 +116,7 @@ def local_optimize(params):
     best_params = None
     best_time = None
     for trial in range(1000):
-        # Ramdomize Parameters
+        # Randomize Parameters
 
         Lt = random_param(Lt_bounds)
         Rt = random_param(Rt_bounds)
@@ -382,14 +271,20 @@ if __name__ == "__main__":
     """
 
     # 5.72
-    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895, 0.02969740379346559, 5508.651741337037]
+    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895,
+    # 0.02969740379346559, 5508.651741337037]
     # 5.659
-    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422, 0.03554130090484798, 3911.1736625844583]
+    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422,
+    # 0.03554130090484798, 3911.1736625844583]
     # 5.67
-    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685, 0.029086120013843354, 2204.6409017118917]
+    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685,
+    # 0.029086120013843354, 2204.6409017118917]
     # 5.73
-    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726, 0.03338539866008866, 3835.046508285344]
+    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726,
+    # 0.03338539866008866, 3835.046508285344]
     # 5.72
-    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863, 0.02868447929729715, 1630.0399232167974]
+    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863,
+    # 0.02868447929729715, 1630.0399232167974]
     # 5.58
-    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
+    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315,
+    # 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
