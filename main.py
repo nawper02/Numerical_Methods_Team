@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize
 
 from rk4 import rk4
-from scipy.optimize import Bounds, minimize
+from train_motion import train_motion, Slipped
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -14,138 +14,29 @@ from scipy.optimize import Bounds, minimize
 #  - Run optimization again
 
 
-
-class Slipped(Exception):
-    pass
-
-
 class Res(object):
     def __init__(self, params, time):
-        self.x = params
-        self.fun = time
+        # store params into dictionary x
+        self.x = {"Lt": params[0], "Rt": params[1], "P0": params[2], "Rg": params[3], "Ls": params[4], "Rp": params[5],
+                  "dens": params[6]}
+        self.time = time
 
 
-def train_motion(t, y, params):
-    """
-    t: current time (seconds)
-    y: current state [position, velocity]
-    params: dictionary of parameters that influence motion
-    returns: dydt, [velocity, acceleration]
-    """
-
-    # Unpack parameters
-    if type(params) == dict:
-        Lt = params["Lt"]
-        Rt = params["Rt"]
-        P0 = params["P0"]
-        Rg = params["Rg"]
-        Ls = params["Ls"]
-        Rp = params["Rp"]
-        density = params["density"]
-    if type(params) == list:
-        Lt = params[0]
-        Rt = params[1]
-        P0 = params[2]
-        Rg = params[3]
-        Ls = params[4]
-        Rp = params[5]
-        density = params[6]
-    if type(params) == np.ndarray:
-        Lt = params[0]
-        Rt = params[1]
-        P0 = params[2]
-        Rg = params[3]
-        Ls = params[4]
-        Rp = params[5]
-        density = params[6]
-
-    # Compute V0
-    V0 = Lt * np.pi * Rp * Rp
-
-    # Compute mass of train
-
-    pp = 1250
-    Lp = 1.5 * Ls
-    mp = pp * np.pi * pow(Rp, 2) * Lp
-    mt = density * Lp * np.pi * ((Rt**2) - pow(Rt/1.15, 2))
-    m = mp + mt
-
-    # Area of the piston head
-    Ap = np.pi * Rp * Rp
-
-    # Compute frontal area of train
-    A = np.pi * Rt * Rt
-
-    # Compute propulsion force
-    # Shouldn't subtract Patm BECAUSE we already have gaUge pressure
-    Fp = (((P0 * V0) / (V0 + Ap * (Rg / Rw) * y[0]))) * Ap
-
-    # Length of acceleration phase
-    La = (Ls * Rw) / Rg
-
-    # If in acceleration phase
-    if y[0] < La:
-        # Is accelerating
-        accel = True
-    else:
-        # Is decelerating
-        accel = False
-
-    # For housekeeping
-    #term_1 = (Rg * 70000 * Ap) / Rw
-    term_1_seg_1 = Ap * Rg / Rw
-    term_1_seg_2 = (P0 * V0) / (V0 + term_1_seg_1 * y[0])
-
-    term_1 = term_1_seg_1 * (term_1_seg_2)
-    #term_1_exponential= (Rg * (P0 * np.exp(-0.1 * t)) * Ap) / Rw
-    term_2 = (p * Cd * A * (y[1] ** 2)) / 2
-    term_3 = m * g * Crr
-    sum_masses = m + Mw
-
-    # if in acceleration phase, solve accelerating equations
-    if accel:
-        acceleration = (term_1 - term_2 - term_3) / sum_masses
-        velocity = y[1]
-    # if not in acceleration phase, solve deceleration equations
-    else:
-        acceleration = (- term_2 - term_3) / m
-        velocity = y[1]
-
-    if velocity < 0:
-        acceleration = 0
-        velocity = 0
-
-    dydt = [velocity, acceleration]
-
-    Ft = ((Rg * Fp) / Rw) - (Mw * acceleration)
-    if Ft > ((Csf * m * g) / 2):
-        raise Slipped
-        #pass
-
-    return dydt
-
-
-def cost(params):
+def run_race_simulation(params):
     try:
         h = 0.01
         tspan = np.arange(0.0, 10, h)
         t, y = rk4(train_motion, tspan, y0, h, params)
-    except Slipped:
+    except Slipped:  # if train slips, return a large time
         return 101
-    if max(y[:, 0]) < 10:
+    if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return 99
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
-                #print(f"\tRun complete, finish time: {t[index]}")
-                if max(y[:, 0]) > 12.5:
+                if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
                     return 105
                 return t[index]
-
-
-def create_options_from_bounds(bounds, num_steps):
-    options = np.linspace(bounds[0], bounds[1], num_steps)
-    return options
 
 
 def random_param(bounds):
@@ -159,6 +50,13 @@ def create_bounds_in_range(var, dist):
 
 
 def optimize(num_trials):
+""" what hyrum started
+def optimize(params_bounds, num_trials):
+    best_params = None
+    best_time = None
+    for trial in range(num_trials):
+        # Randomize Parameters
+"""
     # Create Bounds
     #               Lower Bounds                                Upper Bounds
     #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
@@ -179,25 +77,26 @@ def optimize(num_trials):
     best_time = None
     for trial in range(num_trials):
         # Ramdomize Parameters
+        Lt = random_param(params_bounds["Lt"])
+        Rt = random_param(params_bounds["Rt"])
+        P0 = random_param(params_bounds["P0"])
+        Rg = random_param(params_bounds["Rg"])
+        Ls = random_param(params_bounds["Ls"])
+        Rp = random_param(params_bounds["Rp"])
+        dens = random_param(params_bounds["dens"])
 
-        Lt = random_param(Lt_bounds)
-        Rt = random_param(Rt_bounds)
-        P0 = random_param(P0_bounds)
-        Rg = random_param(Rg_bounds)
-        Ls = random_param(Ls_bounds)
-        Rp = random_param(Rp_bounds)
-        dens = random_param(density_bounds)
-
-        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+        raceTime = run_race_simulation(params)
 
-        time_list.append(cost(params))
-        params_list.append(params)
+        # if this is the first trial, set best_params and best_time
+        if best_params is None:
+            best_params = params
+            best_time = raceTime
 
-        if time_list[-1] == min(time_list):
-            best_params = params_list[-1]
-            best_time = time_list[-1]
-
+        # if this is not the first trial, compare to best_params and best_time
+        if raceTime < best_time:
+            best_params = params
+            best_time = raceTime
             print(f"Best parameters so far:")
             print(f"\tLt: {best_params[0]}")
             print(f"\tRt: {best_params[1]}")
@@ -208,6 +107,7 @@ def optimize(num_trials):
             print(f"\tdensity: {best_params[6]}")
             print(f"Optimized cost (time): {best_time}")
             print(f"Copyable: {best_params.tolist()}\n")
+
     else:
         res = Res(best_params, best_time)
 
@@ -224,10 +124,9 @@ def local_optimize(params, num_trials, dist):
     Rp_bounds = create_bounds_in_range(params[5], dist)
     density_bounds = create_bounds_in_range(params[6], dist)
 
-    time_list = []
-    params_list = []
     best_params = None
     best_time = None
+
     for trial in range(num_trials):
         Lt = random_param(Lt_bounds)
         Rt = random_param(Rt_bounds)
@@ -237,16 +136,18 @@ def local_optimize(params, num_trials, dist):
         Rp = random_param(Rp_bounds)
         dens = random_param(density_bounds)
 
-        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+        raceTime = run_race_simulation(params)
 
-        time_list.append(cost(params))
-        params_list.append(params)
+        # if this is the first trial, set best_params and best_time
+        if best_params is None:
+            best_params = params
+            best_time = raceTime
 
-        if time_list[-1] == min(time_list):
-            best_params = params_list[-1]
-            best_time = time_list[-1]
-
+        # if this is not the first trial, compare to best_params and best_time
+        if raceTime < best_time:
+            best_params = params
+            best_time = raceTime
             print(f"Best parameters so far:")
             print(f"\tLt: {best_params[0]}")
             print(f"\tRt: {best_params[1]}")
@@ -257,15 +158,37 @@ def local_optimize(params, num_trials, dist):
             print(f"\tdensity: {best_params[6]}")
             print(f"Optimized cost (time): {best_time}")
             print(f"Copyable: {best_params.tolist()}\n")
+
     else:
         res = Res(best_params, best_time)
     return res
 
 
 def main():
-    res = optimize(1000)
-    print("Completed coarse optimization, beginning fine optimization")
-    res = local_optimize(res.x, 1000, 0.1)
+    # Initialize bounds
+    Lt_bounds = (0.2, 0.3)
+    Rt_bounds = (0.05, 0.2)
+    P0_bounds = (70000, 200000)
+    Rg_bounds = (0.002, 0.01)
+    Ls_bounds = (0.1, 0.5)
+    Rp_bounds = (0.02, 0.04)
+    dens_bounds = (1200, 8940)
+
+    # Make params_bounds dictionary
+    params_bounds = {
+        "Lt": Lt_bounds,
+        "Rt": Rt_bounds,
+        "P0": P0_bounds,
+        "Rg": Rg_bounds,
+        "Ls": Ls_bounds,
+        "Rp": Rp_bounds,
+        "dens": dens_bounds}
+
+    num_trials = 1000
+
+    res = optimize(params_bounds, num_trials)
+    print("Completed coarse optimization, beginning local optimization")
+    res = local_optimize(res.x)
     print("Local optimization complete.")
 
 
@@ -278,7 +201,7 @@ def main():
     print(f"\tRp: {res.x[5]}")
     print(f"\tdensity: {res.x[6]}")
     print(f"Copyable: {list(res.x)}")
-    print(f"Optimized cost (time): {res.fun}\n")
+    print(f"Optimized cost (time): {res.time}\n")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -287,28 +210,26 @@ def main():
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
-    ax1.plot(t, y[:, 0], '-b', label='Position')
-    ax2.plot(t, y[:, 1], 'r--', label='Velocity')
-    ax1.plot(res.fun, 10, 'go', label='Finish Time')
+    ax2.plot(t, y[:, 0], '-b', label='Position')
+    ax1.plot(t, y[:, 1], 'r--', label='Velocity')
+    ax2.plot(res.time, 10, 'go', label='Finish Time')
 
-    ax1.set_xlabel('Time (s)')
-    ax1.set_ylabel('Position (m)')
-    ax2.set_ylabel('Velocity (m/s)')
-    plt.title('Simulation of train -- position and velocity vs time')
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('Position (m)', color='b')
+    ax1.set_ylabel('Velocity (m/s)', color='r')
+    ax2.set_ylim([0, 1.1*max(y[:, 0])])
+    ax1.set_ylim([0, 1.1*max(y[:, 1])])
+    plt.title('Train Motion')
     fig.legend()
 
+    plt.xlim(0, max(t))
     plt.savefig("combined.pdf")
-
     plt.show()
 
 
 if __name__ == "__main__":
-    # Initialize design parameters (to optimize)
-    design_params = {"Lt": 0.25, "Rt": 0.1, "density": 2700, "P0": 70e3, "Rg": 0.01, "Ls": 0.1, "Rp": 0.01}
-    #                     Lt    Rt    dens   P0   Rg    Ls   Rp
-    design_params_list = [0.25, 0.1, 2700, 70e3, 0.01, 0.1, 0.01]
 
-    # Constants (Global)
+    # Initialize global constants
     g = 9.81            # m/s^2
     Patm = 101325.0     # Pa
     p = 1.0             # kg/m^3
@@ -317,6 +238,12 @@ if __name__ == "__main__":
     Csf = 0.7           # -
     Rw = 0.025          # m
     Mw = 0.1            # kg
+
+    # Initialize initial conditions
+    y0 = [0, 0]  # pos, vel
+
+    # Run main
+    main()
 
     """
         • Acceleration of gravity: 9:8 m/s2 (g)
@@ -355,19 +282,25 @@ if __name__ == "__main__":
             length of piston stroke - Ls - (0.1, 0.5) m
             radius of piston - Rp - (0.02, 0.04) m
     """
-    y0 = [0, 0] # pos, vel
-    main()
+
     # 5.72
-    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895, 0.02969740379346559, 5508.651741337037]
+    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895,
+    # 0.02969740379346559, 5508.651741337037]
     # 5.659
-    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422, 0.03554130090484798, 3911.1736625844583]
+    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422,
+    # 0.03554130090484798, 3911.1736625844583]
     # 5.67
-    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685, 0.029086120013843354, 2204.6409017118917]
+    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685,
+    # 0.029086120013843354, 2204.6409017118917]
     # 5.73
-    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726, 0.03338539866008866, 3835.046508285344]
+    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726,
+    # 0.03338539866008866, 3835.046508285344]
     # 5.72
-    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863, 0.02868447929729715, 1630.0399232167974]
+    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863,
+    # 0.02868447929729715, 1630.0399232167974]
     # 5.58
+    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315,
+    # 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
     # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
     # 5.6699999999999235
     # [0.19739815303094518, 0.09346809312765124, 169667.59784325594, 0.004126413728920994, 0.3275365103149462, 0.0327935037139186, 8462.017978586722]
