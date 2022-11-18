@@ -299,18 +299,23 @@ def main():
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
-    ax1.plot(t, y[:, 0], '-b', label='Position')
-    ax2.plot(t, y[:, 1], 'r--', label='Velocity')
-    ax1.plot(res.fun, 10, 'go', label='Finish Time')
 
-    ax1.set_xlabel('Time (s)')
-    ax1.set_ylabel('Position (m)')
-    ax2.set_ylabel('Velocity (m/s)')
-    plt.title('Simulation of train -- position and velocity vs time')
+    # q: Why is the position axis not on the right?
+
+    ax2.plot(t, y[:, 0], '-b', label='Position')
+    ax1.plot(t, y[:, 1], 'r--', label='Velocity')
+    ax2.plot(res.fun, 10, 'go', label='Finish Time')
+
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('Position (m)', color='b')
+    ax1.set_ylabel('Velocity (m/s)', color='r')
+    ax2.set_ylim([0, 1.1*max(y[:, 0])])
+    ax1.set_ylim([0, 1.1*max(y[:, 1])])
+    plt.title('Train Motion')
     fig.legend()
 
+    plt.xlim(0, max(t))
     plt.savefig("combined.pdf")
-
     plt.show()
 
 
