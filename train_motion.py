@@ -13,6 +13,7 @@ Crr = 0.03  # -
 Csf = 0.7  # -
 Rw = 0.025  # m
 Mw = 0.1  # kg
+y0 = [0, 0]  # pos, vel
 
 
 class Slipped(Exception):
@@ -35,7 +36,7 @@ def train_motion(t, y, params):
         Rg = params["Rg"]
         Ls = params["Ls"]
         Rp = params["Rp"]
-        density = params["density"]
+        dens = params["dens"]
     elif type(params) == list:
         Lt = params[0]
         Rt = params[1]
@@ -43,7 +44,7 @@ def train_motion(t, y, params):
         Rg = params[3]
         Ls = params[4]
         Rp = params[5]
-        density = params[6]
+        dens = params[6]
     elif type(params) == np.ndarray:
         Lt = params[0]
         Rt = params[1]
@@ -51,7 +52,7 @@ def train_motion(t, y, params):
         Rg = params[3]
         Ls = params[4]
         Rp = params[5]
-        density = params[6]
+        dens = params[6]
     else:
         raise TypeError("params must be a dictionary, list, or numpy array")
 
@@ -63,7 +64,7 @@ def train_motion(t, y, params):
     pp = 1250
     Lp = 1.5 * Ls
     mp = pp * np.pi * pow(Rp, 2) * Lp
-    mt = density * Lp * np.pi * ((Rt ** 2) - pow(Rt / 1.15, 2))
+    mt = dens * Lp * np.pi * ((Rt ** 2) - pow(Rt / 1.15, 2))
     m = mp + mt
 
     # Area of the piston head
