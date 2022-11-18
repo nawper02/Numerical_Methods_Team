@@ -37,7 +37,7 @@ def main():
 
     res = optimize(params_bounds, num_trials)
     print("Completed coarse optimization, beginning local optimization")
-    res = local_optimize(res, num_trials, .01)
+    res = local_optimize(res.x, num_trials, .01)
     print("Local optimization complete.")
 
     print(f"Final parameters:")
