@@ -3,6 +3,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.optimize
+
 from rk4 import rk4
 from train_motion import train_motion, Slipped
 
@@ -41,12 +43,40 @@ def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
+def create_bounds_in_range(var, dist):
+    var_s = dist * var
+    bounds = (var - var_s, var + var_s)
+    return bounds
+
+
+def optimize(num_trials):
+""" what hyrum started
 def optimize(params_bounds, num_trials):
     best_params = None
     best_time = None
     for trial in range(num_trials):
         # Randomize Parameters
+"""
+    # Create Bounds
+    #               Lower Bounds                                Upper Bounds
+    #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
+    bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 200000, 0.01, 0.5, 0.04, 8940])
 
+    # Create bounds for each parameter
+    Lt_bounds = (0.2, 0.3)
+    Rt_bounds = (0.05, 0.2)
+    P0_bounds = (70000, 200000)
+    Rg_bounds = (0.002, 0.01)
+    Ls_bounds = (0.1, 0.5)
+    Rp_bounds = (0.02, 0.04)
+    density_bounds = (1200, 8940)
+
+    time_list = []
+    params_list = []
+    best_params = None
+    best_time = None
+    for trial in range(num_trials):
+        # Ramdomize Parameters
         Lt = random_param(params_bounds["Lt"])
         Rt = random_param(params_bounds["Rt"])
         P0 = random_param(params_bounds["P0"])
@@ -84,40 +114,20 @@ def optimize(params_bounds, num_trials):
     return res
 
 
-def local_optimize(params):
+def local_optimize(params, num_trials, dist):
     # Create local bounds for each parameter
-    dist = 0.1
-
-    # unpack params dict
-    Lt = params["Lt"]
-    Rt = params["Rt"]
-    P0 = params["P0"]
-    Rg = params["Rg"]
-    Ls = params["Ls"]
-    Rp = params["Rp"]
-    dens = params["dens"]
-
-    Lt_s = dist * Lt
-    Rt_s = dist * Rt
-    P0_s = dist * P0
-    Rg_s = dist * Rg
-    Ls_s = dist * Ls
-    Rp_s = dist * Rp
-    dens_s = dist * dens
-
-    Lt_bounds = (Lt-Lt_s, Lt+Lt_s)
-    Rt_bounds = (Rt-Rt_s, Rt+Rt_s)
-    P0_bounds = (P0-P0_s, P0+P0_s)
-    Rg_bounds = (Rg-Rg_s, Rg+Rg_s)
-    Ls_bounds = (Ls-Ls_s, Ls+Ls_s)
-    Rp_bounds = (Rp-Rp_s, Rp+Rp_s)
-    density_bounds = (dens-dens_s, dens+dens_s)
+    Lt_bounds = create_bounds_in_range(params[0], dist)
+    Rt_bounds = create_bounds_in_range(params[1], dist)
+    P0_bounds = create_bounds_in_range(params[2], dist)
+    Rg_bounds = create_bounds_in_range(params[3], dist)
+    Ls_bounds = create_bounds_in_range(params[4], dist)
+    Rp_bounds = create_bounds_in_range(params[5], dist)
+    density_bounds = create_bounds_in_range(params[6], dist)
 
     best_params = None
     best_time = None
-    for trial in range(1000):
-        # Randomize Parameters
 
+    for trial in range(num_trials):
         Lt = random_param(Lt_bounds)
         Rt = random_param(Rt_bounds)
         P0 = random_param(P0_bounds)
@@ -151,7 +161,6 @@ def local_optimize(params):
 
     else:
         res = Res(best_params, best_time)
-
     return res
 
 
@@ -181,6 +190,7 @@ def main():
     print("Completed coarse optimization, beginning local optimization")
     res = local_optimize(res.x)
     print("Local optimization complete.")
+
 
     print(f"Final parameters:")
     print(f"\tLt: {res.x[0]}")
@@ -291,3 +301,8 @@ if __name__ == "__main__":
     # 5.58
     # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315,
     # 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
+    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
+    # 5.6699999999999235
+    # [0.19739815303094518, 0.09346809312765124, 169667.59784325594, 0.004126413728920994, 0.3275365103149462, 0.0327935037139186, 8462.017978586722]
+    # 5.649999999999924
+    # [0.1919382517333743, 0.0893634089702165, 97938.03198283388, 0.004948947886315307, 0.40893735489112343, 0.028672510065196756, 3438.3636208460707]
