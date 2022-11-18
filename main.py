@@ -150,46 +150,33 @@ def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
-def optimize():
-    # Create Bounds
-    #               Lower Bounds                          Upper Bounds
-    #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
-    bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 200000, 0.01, 0.5, 0.04, 8940])
-
-    # Create bounds for each parameter
-    Lt_bounds = (0.2, 0.3)
-    Rt_bounds = (0.05, 0.2)
-    P0_bounds = (70000, 200000)
-    Rg_bounds = (0.002, 0.01)
-    Ls_bounds = (0.1, 0.5)
-    Rp_bounds = (0.02, 0.04)
-    density_bounds = (1200, 8940)
-
-    time_list = []
-    params_list = []
+def optimize(params_bounds, num_trials):
     best_params = None
     best_time = None
-    for trial in range(1000):
-        # Ramdomize Parameters
+    for trial in range(num_trials):
+        # Randomize Parameters
 
-        Lt = random_param(Lt_bounds)
-        Rt = random_param(Rt_bounds)
-        P0 = random_param(P0_bounds)
-        Rg = random_param(Rg_bounds)
-        Ls = random_param(Ls_bounds)
-        Rp = random_param(Rp_bounds)
-        dens = random_param(density_bounds)
+        Lt = random_param(params_bounds["Lt"])
+        Rt = random_param(params_bounds["Rt"])
+        P0 = random_param(params_bounds["P0"])
+        Rg = random_param(params_bounds["Rg"])
+        Ls = random_param(params_bounds["Ls"])
+        Rp = random_param(params_bounds["Rp"])
+        dens = random_param(params_bounds["dens"])
 
-        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+        raceTime = cost(params)
 
-        time_list.append(cost(params))
-        params_list.append(params)
+        # if this is the first trial, set best_params and best_time
+        if best_params is None:
+            best_params = params
+            best_time = raceTime
 
-        if time_list[-1] == min(time_list):
-            best_params = params_list[-1]
-            best_time = time_list[-1]
+        # if this is not the first trial, compare to best_params and best_time
 
+        if raceTime < best_time:
+            best_params = params
+            best_time = raceTime
             print(f"Best parameters so far:")
             print(f"\tLt: {best_params[0]}")
             print(f"\tRt: {best_params[1]}")
@@ -200,6 +187,7 @@ def optimize():
             print(f"\tdensity: {best_params[6]}")
             print(f"Optimized cost (time): {best_time}")
             print(f"Copyable: {best_params.tolist()}\n")
+
     else:
         res = Res(best_params, best_time)
 
@@ -276,7 +264,28 @@ def local_optimize(params):
 
 
 def main():
-    res = optimize()
+    # Initialize bounds
+    Lt_bounds = (0.2, 0.3)
+    Rt_bounds = (0.05, 0.2)
+    P0_bounds = (70000, 200000)
+    Rg_bounds = (0.002, 0.01)
+    Ls_bounds = (0.1, 0.5)
+    Rp_bounds = (0.02, 0.04)
+    dens_bounds = (1200, 8940)
+
+    # Make params_bounds dictionary
+    params_bounds = {
+        "Lt": Lt_bounds,
+        "Rt": Rt_bounds,
+        "P0": P0_bounds,
+        "Rg": Rg_bounds,
+        "Ls": Ls_bounds,
+        "Rp": Rp_bounds,
+        "dens": dens_bounds}
+
+    num_trials = 1000
+
+    res = optimize(params_bounds, num_trials)
     print("Completed coarse optimization, beginning local optimization")
     res = local_optimize(res.x)
     print("Local optimization complete.")
@@ -299,9 +308,6 @@ def main():
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
-
-    # q: Why is the position axis not on the right?
-
     ax2.plot(t, y[:, 0], '-b', label='Position')
     ax1.plot(t, y[:, 1], 'r--', label='Velocity')
     ax2.plot(res.fun, 10, 'go', label='Finish Time')
@@ -320,12 +326,8 @@ def main():
 
 
 if __name__ == "__main__":
-    # Initialize design parameters (to optimize)
-    design_params = {"Lt": 0.25, "Rt": 0.1, "density": 2700, "P0": 70e3, "Rg": 0.01, "Ls": 0.1, "Rp": 0.01}
-    #                     Lt    Rt    dens   P0   Rg    Ls   Rp
-    design_params_list = [0.25, 0.1, 2700, 70e3, 0.01, 0.1, 0.01]
 
-    # Constants (Global)
+    # Initialize global constants
     g = 9.81            # m/s^2
     Patm = 101325.0     # Pa
     p = 1.0             # kg/m^3
@@ -334,6 +336,12 @@ if __name__ == "__main__":
     Csf = 0.7           # -
     Rw = 0.025          # m
     Mw = 0.1            # kg
+
+    # Initialize initial conditions
+    y0 = [0, 0]  # pos, vel
+
+    # Run main
+    main()
 
     """
         • Acceleration of gravity: 9:8 m/s2 (g)
@@ -372,8 +380,7 @@ if __name__ == "__main__":
             length of piston stroke - Ls - (0.1, 0.5) m
             radius of piston - Rp - (0.02, 0.04) m
     """
-    y0 = [0, 0] # pos, vel
-    main()
+
     # 5.72
     # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895, 0.02969740379346559, 5508.651741337037]
     # 5.659
