@@ -1,5 +1,6 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
 # LAB 08
+
 import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
@@ -60,6 +61,7 @@ def train_motion(t, y, params):
     V0 = Lt * np.pi * Rp * Rp
 
     # Compute mass of train
+
     pp = 1250
     Lp = 1.5 * Ls
     mp = pp * np.pi * pow(Rp, 2) * Lp
@@ -143,6 +145,9 @@ def create_options_from_bounds(bounds, num_steps):
     options = np.linspace(bounds[0], bounds[1], num_steps)
     return options
 
+
+def random_param(bounds):
+    return np.random.uniform(bounds[0], bounds[1])
 
 
 def optimize():
@@ -272,7 +277,11 @@ def local_optimize(params):
 
 def main():
     res = optimize()
-    print(f"Optimized parameters:")
+    print("Completed coarse optimization, beginning local optimization")
+    res = local_optimize(res.x)
+    print("Local optimization complete.")
+
+    print(f"Final parameters:")
     print(f"\tLt: {res.x[0]}")
     print(f"\tRt: {res.x[1]}")
     print(f"\tP0: {res.x[2]}")
@@ -285,12 +294,20 @@ def main():
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
-    try:
-        t, y = rk4(train_motion, tspan, y0, h, res.x)
-        #x0 = [0.25, 0.115, 70000, 0.005, 0.3, 0.032, 8000]
-        #t, y = rk4(train_motion, tspan, y0, h, x0)
-    except Slipped:
-        print("Train slipped")
+    t, y = rk4(train_motion, tspan, y0, h, res.x)
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+
+    ax1.plot(t, y[:, 0], '-b', label='Position')
+    ax2.plot(t, y[:, 1], 'r--', label='Velocity')
+    ax1.plot(res.fun, 10, 'go', label='Finish Time')
+
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('Position (m)')
+    ax2.set_ylabel('Velocity (m/s)')
+    plt.title('Simulation of train -- position and velocity vs time')
+    fig.legend()
 
     plt.savefig("combined.pdf")
 
