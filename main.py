@@ -9,8 +9,6 @@ from scipy.optimize import Bounds, minimize
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
 #  - Decrease random region based off of previous results
 #  - Run optimization again
-#  - Decrease random region based off of previous results
-#  - Run optimization again
 
 
 class Slipped(Exception):
