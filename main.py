@@ -14,23 +14,25 @@ from train_motion import train_motion, Slipped
 
 class Res(object):
     def __init__(self, params, time):
-        self.x = params
-        self.fun = time
+        # store params into dictionary x
+        self.x = {"Lt": params[0], "Rt": params[1], "P0": params[2], "Rg": params[3], "Ls": params[4], "Rp": params[5],
+                  "dens": params[6]}
+        self.time = time
 
 
-def cost(params):
+def run_race_simulation(params):
     try:
         h = 0.01
         tspan = np.arange(0.0, 10, h)
         t, y = rk4(train_motion, tspan, y0, h, params)
-    except Slipped:
+    except Slipped:  # if train slips, return a large time
         return 101
-    if max(y[:, 0]) < 10:
+    if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return 99
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
-                if max(y[:, 0]) > 12.5:
+                if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
                     return 105
                 return t[index]
 
@@ -54,7 +56,7 @@ def optimize(params_bounds, num_trials):
         dens = random_param(params_bounds["dens"])
 
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
-        raceTime = cost(params)
+        raceTime = run_race_simulation(params)
 
         # if this is the first trial, set best_params and best_time
         if best_params is None:
@@ -62,7 +64,6 @@ def optimize(params_bounds, num_trials):
             best_time = raceTime
 
         # if this is not the first trial, compare to best_params and best_time
-
         if raceTime < best_time:
             best_params = params
             best_time = raceTime
@@ -87,13 +88,14 @@ def local_optimize(params):
     # Create local bounds for each parameter
     dist = 0.1
 
-    Lt = params[0]
-    Rt = params[1]
-    P0 = params[2]
-    Rg = params[3]
-    Ls = params[4]
-    Rp = params[5]
-    dens = params[6]
+    # unpack params dict
+    Lt = params["Lt"]
+    Rt = params["Rt"]
+    P0 = params["P0"]
+    Rg = params["Rg"]
+    Ls = params["Ls"]
+    Rp = params["Rp"]
+    dens = params["dens"]
 
     Lt_s = dist * Lt
     Rt_s = dist * Rt
@@ -111,8 +113,6 @@ def local_optimize(params):
     Rp_bounds = (Rp-Rp_s, Rp+Rp_s)
     density_bounds = (dens-dens_s, dens+dens_s)
 
-    time_list = []
-    params_list = []
     best_params = None
     best_time = None
     for trial in range(1000):
@@ -126,16 +126,18 @@ def local_optimize(params):
         Rp = random_param(Rp_bounds)
         dens = random_param(density_bounds)
 
-        #                  Lt  Rt  P0  Rg  Ls  Rp  dens
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+        raceTime = run_race_simulation(params)
 
-        time_list.append(cost(params))
-        params_list.append(params)
+        # if this is the first trial, set best_params and best_time
+        if best_params is None:
+            best_params = params
+            best_time = raceTime
 
-        if time_list[-1] == min(time_list):
-            best_params = params_list[-1]
-            best_time = time_list[-1]
-
+        # if this is not the first trial, compare to best_params and best_time
+        if raceTime < best_time:
+            best_params = params
+            best_time = raceTime
             print(f"Best parameters so far:")
             print(f"\tLt: {best_params[0]}")
             print(f"\tRt: {best_params[1]}")
@@ -146,6 +148,7 @@ def local_optimize(params):
             print(f"\tdensity: {best_params[6]}")
             print(f"Optimized cost (time): {best_time}")
             print(f"Copyable: {best_params.tolist()}\n")
+
     else:
         res = Res(best_params, best_time)
 
@@ -188,7 +191,7 @@ def main():
     print(f"\tRp: {res.x[5]}")
     print(f"\tdensity: {res.x[6]}")
     print(f"Copyable: {list(res.x)}")
-    print(f"Optimized cost (time): {res.fun}\n")
+    print(f"Optimized cost (time): {res.time}\n")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -199,7 +202,7 @@ def main():
 
     ax2.plot(t, y[:, 0], '-b', label='Position')
     ax1.plot(t, y[:, 1], 'r--', label='Velocity')
-    ax2.plot(res.fun, 10, 'go', label='Finish Time')
+    ax2.plot(res.time, 10, 'go', label='Finish Time')
 
     ax2.set_xlabel('Time (s)')
     ax2.set_ylabel('Position (m)', color='b')
