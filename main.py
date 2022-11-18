@@ -3,7 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.optimize
+from scipy.optimize import Bounds, minimize
 
 from rk4 import rk4
 from train_motion import train_motion, Slipped
@@ -49,27 +49,18 @@ def create_bounds_in_range(var, dist):
     return bounds
 
 
-def optimize(num_trials):
-""" what hyrum started
 def optimize(params_bounds, num_trials):
-    best_params = None
-    best_time = None
-    for trial in range(num_trials):
-        # Randomize Parameters
-"""
-    # Create Bounds
+    """ what hyrum started
+    def optimize(params_bounds, num_trials):
+        best_params = None
+        best_time = None
+        for trial in range(num_trials):
+            # Randomize Parameters
+    """
+    # Create Bounds For Scipi minimize
     #               Lower Bounds                                Upper Bounds
     #               Lt    Rt    P0     Rg     Ls   Rp    dens   Lt    Rt   P0     Rg    Ls   Rp    dens
     bounds = Bounds([0.2, 0.05, 70000, 0.002, 0.1, 0.02, 1200], [0.3, 0.2, 200000, 0.01, 0.5, 0.04, 8940])
-
-    # Create bounds for each parameter
-    Lt_bounds = (0.2, 0.3)
-    Rt_bounds = (0.05, 0.2)
-    P0_bounds = (70000, 200000)
-    Rg_bounds = (0.002, 0.01)
-    Ls_bounds = (0.1, 0.5)
-    Rp_bounds = (0.02, 0.04)
-    density_bounds = (1200, 8940)
 
     time_list = []
     params_list = []
@@ -188,7 +179,7 @@ def main():
 
     res = optimize(params_bounds, num_trials)
     print("Completed coarse optimization, beginning local optimization")
-    res = local_optimize(res.x)
+    res = local_optimize(res.x, num_trials, 0.01)
     print("Local optimization complete.")
 
 
