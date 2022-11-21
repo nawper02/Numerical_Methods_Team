@@ -15,6 +15,7 @@ from optimize_method import optimize, local_optimize, new_optimization_method
 
 def main():
     # Initialize bounds
+
     Lt_bounds = (0.2, 0.3)
     Rt_bounds = (0.05, 0.2)
     P0_bounds = (70000, 200000)
@@ -24,6 +25,7 @@ def main():
     dens_bounds = (1200, 8940)
 
     # Initialize params dict to be in between bounds
+
     params = {
         "Lt": (Lt_bounds[0] + Lt_bounds[1]) / 2,
         "Rt": (Rt_bounds[0] + Rt_bounds[1]) / 2,
@@ -35,6 +37,7 @@ def main():
     }
 
     # Make params_bounds dictionary
+
     params_bounds = {
         "Lt": Lt_bounds,
         "Rt": Rt_bounds,
@@ -47,6 +50,7 @@ def main():
     num_trials = 1000
 
     # Run optimization
+
     scipyWorking = False
 
     if scipyWorking:
@@ -59,6 +63,8 @@ def main():
         res = local_optimize(res.x, num_trials, .01)
         print("Local optimization complete.")
 
+    # Print optimization results
+
     print(f"Final parameters:")
     print(f"\tLt: {res.x['Lt']}")
     print(f"\tRt: {res.x['Rt']}")
@@ -70,9 +76,13 @@ def main():
     print(f"Final Optimized time: {res.time}")
     print(f"Copyable: {res.list}")
 
+    # Run final simulation
+
     h = 0.01
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, res.x)
+
+    # Plot results
 
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
@@ -90,6 +100,9 @@ def main():
     fig.legend()
 
     plt.xlim(0, max(t))
+
+    # Save and show plot
+
     plt.savefig("combined.pdf")
     plt.show()
 
