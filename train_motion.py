@@ -114,8 +114,9 @@ def train_motion(t, y, params):
 
     dydt = [velocity, acceleration]
 
+    slipFlag = False
     Ft = ((Rg * Fp) / Rw) - (Mw * acceleration)
     if Ft > ((Csf * m * g) / 2):
-        raise Slipped
+        slipFlag = True
 
-    return dydt
+    return dydt, slipFlag

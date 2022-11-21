@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from rk4 import rk4
 from train_motion import train_motion
-from optimize_method import optimize, local_optimize
+from optimize_method import optimize, local_optimize, new_optimization_method
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -15,6 +15,7 @@ from optimize_method import optimize, local_optimize
 
 def main():
     # Initialize bounds
+
     Lt_bounds = (0.2, 0.3)
     Rt_bounds = (0.05, 0.2)
     P0_bounds = (70000, 200000)
@@ -23,7 +24,20 @@ def main():
     Rp_bounds = (0.02, 0.04)
     dens_bounds = (1200, 8940)
 
+    # Initialize params dict to be in between bounds
+
+    params = {
+        "Lt": (Lt_bounds[0] + Lt_bounds[1]) / 2,
+        "Rt": (Rt_bounds[0] + Rt_bounds[1]) / 2,
+        "P0": P0_bounds[1],
+        "Rg": (Rg_bounds[0] + Rg_bounds[1]) / 2,
+        "Ls": (Ls_bounds[0] + Ls_bounds[1]) / 2,
+        "Rp": (Rp_bounds[0] + Rp_bounds[1]) / 2,
+        "dens": (dens_bounds[0] + dens_bounds[1]) / 2
+    }
+
     # Make params_bounds dictionary
+
     params_bounds = {
         "Lt": Lt_bounds,
         "Rt": Rt_bounds,
@@ -35,10 +49,21 @@ def main():
 
     num_trials = 1000
 
-    res = optimize(params_bounds, num_trials)
-    print("Completed coarse optimization, beginning local optimization")
-    res = local_optimize(res.x, num_trials, .01)
-    print("Local optimization complete.")
+    # Run optimization
+
+    scipyWorking = False
+
+    if scipyWorking:
+        print("Running scipy.optimize.minimize")
+        res = new_optimization_method(params, params_bounds, .01)
+    else:
+        print("Running Randomized Optimization")
+        res = optimize(params_bounds, num_trials)
+        print("Completed coarse optimization, beginning local optimization")
+        res = local_optimize(res.x, num_trials, .01)
+        print("Local optimization complete.")
+
+    # Print optimization results
 
     print(f"Final parameters:")
     print(f"\tLt: {res.x['Lt']}")
@@ -51,9 +76,13 @@ def main():
     print(f"Final Optimized time: {res.time}")
     print(f"Copyable: {res.list}")
 
+    # Run final simulation
+
     h = 0.01
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, res.x)
+
+    # Plot results
 
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
@@ -71,6 +100,9 @@ def main():
     fig.legend()
 
     plt.xlim(0, max(t))
+
+    # Save and show plot
+
     plt.savefig("combined.pdf")
     plt.show()
 

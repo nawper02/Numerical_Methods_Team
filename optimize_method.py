@@ -4,6 +4,7 @@
 import numpy as np
 from train_motion import train_motion, Slipped
 from rk4 import rk4
+from scipy.optimize import minimize
 
 # Initialize global constants
 g = 9.81  # m/s^2
@@ -26,13 +27,12 @@ class Res(object):
         self.list = [self.x["Lt"], self.x["Rt"], self.x["P0"], self.x["Rg"], self.x["Ls"], self.x["Rp"], self.x["dens"]]
 
 
-def run_race_simulation(params):
-    try:
-        h = 0.01
-        tspan = np.arange(0.0, 10, h)
-        t, y = rk4(train_motion, tspan, y0, h, params)
-    except Slipped:  # if train slips, return a large time
-        return 101
+def run_race_simulation(params, *args):  # *args is for the scipy optimizer
+    h = 0.01
+    tspan = np.arange(0.0, 10, h)
+    t, y = rk4(train_motion, tspan, y0, h, params)
+    if y is True:  # if train slips, return a large time
+        return 100
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return 99
     else:
@@ -41,6 +41,8 @@ def run_race_simulation(params):
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
                     return 105
                 return t[index]
+            else:
+                pass
 
 
 def random_param(bounds):
@@ -143,4 +145,47 @@ def local_optimize(params, num_trials, dist):
 
     else:
         res = Res(best_params, best_time)
+    return res
+
+
+def new_optimization_method(params, params_bounds, tol):
+    # I have 7 dependent parameters that effect train motion
+    # I want to find the fastest time the train can reach the finish line (10m)
+    # and also not overshoot the maximum distance (12.5m)
+    # I will use a scipy optimizer to find the best parameters
+
+    # Create bounds for each parameter
+    Lt_bounds = params_bounds['Lt']
+    Rt_bounds = params_bounds['Rt']
+    P0_bounds = params_bounds['P0']
+    Rg_bounds = params_bounds['Rg']
+    Ls_bounds = params_bounds['Ls']
+    Rp_bounds = params_bounds['Rp']
+    dens_bounds = params_bounds['dens']
+
+    # Create bounds for all parameters
+    bounds = (Lt_bounds, Rt_bounds, P0_bounds, Rg_bounds, Ls_bounds, Rp_bounds, dens_bounds)
+
+    # # Create initial guess for parameters
+    # Lt = params['Lt']
+    # Rt = params['Rt']
+    # P0 = params['P0']
+    # Rg = params['Rg']
+    # Ls = params['Ls']
+    # Rp = params['Rp']
+    # dens = params['dens']
+    # x0 = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+    #
+    # # minimize the run_race_simulation function
+    #
+    # res = minimize(run_race_simulation, x0, method='Nelder-Mead', bounds=bounds, tol=tol)
+
+    # Run random optimization to find a good starting point
+    res = optimize(params_bounds, 100)
+    new_params = np.array(res.list)
+
+    # R
+
+    res = Res(res.x, res.fun)
+
     return res
