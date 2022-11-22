@@ -48,7 +48,7 @@ def main():
         "Rp": Rp_bounds,
         "dens": dens_bounds}
 
-    num_trials = 1000
+    num_trials = 2888
 
     # Run optimization
 
@@ -60,9 +60,14 @@ def main():
     else:
         print("Running Randomized Optimization")
         res = optimize(params_bounds, num_trials)
-        print("Completed coarse optimization, beginning local optimization")
+        print("Completed coarse optimization, beginning local optimization with dist = 0.5")
+        res = local_optimize(res.x, num_trials, .5)
+        print(".5 local optimization complete, beginning local optimization with dist = 0.1")
+        res = local_optimize(res.x, num_trials, .1)
+        print(".1 local optimization complete, beginning local optimization with dist = 0.01")
         res = local_optimize(res.x, num_trials, .01)
-        print("Local optimization complete.")
+
+
 
     # Print optimization results
 
@@ -104,8 +109,18 @@ def main():
 
     # Save and show plot
 
+    # First save finish time and its associated parameters to a csv file
+
+    with open('race_times.csv', 'a', newline='') as file:
+        writer = csv.writer(file, delimiter=',')
+        writer.writerow([res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'], res.x['dens']])
+
+    # Then save the plot as a pdf
+
     plt.savefig("combined.pdf")
     plt.show()
+
+    print("Done")
 
 
 if __name__ == "__main__":
