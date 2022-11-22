@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import csv
 from rk4 import rk4
 from train_motion import train_motion
-from optimize_method import optimize, local_optimize, new_optimization_method
+from optimize_method import optimize, local_optimize, exhaustive_search
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -52,22 +52,20 @@ def main():
 
     # Run optimization
 
-    scipyWorking = False
+    new_method = True
 
-    if scipyWorking:
+    if new_method:
         print("Running scipy.optimize.minimize")
-        res = new_optimization_method(params, params_bounds, .01)
+        res = exhaustive_search(params, params_bounds)
     else:
         print("Running Randomized Optimization")
         res = optimize(params_bounds, num_trials)
         print("Completed coarse optimization, beginning local optimization with dist = 0.5")
-        res = local_optimize(res.x, num_trials, .5)
+        res = local_optimize(res.x, num_trials, .5, params_bounds)
         print(".5 local optimization complete, beginning local optimization with dist = 0.1")
-        res = local_optimize(res.x, num_trials, .1)
+        res = local_optimize(res.x, num_trials, .1, params_bounds)
         print(".1 local optimization complete, beginning local optimization with dist = 0.01")
-        res = local_optimize(res.x, num_trials, .01)
-
-
+        res = local_optimize(res.x, num_trials, .01, params_bounds)
 
     # Print optimization results
 
@@ -176,43 +174,3 @@ if __name__ == "__main__":
             length of piston stroke - Ls - (0.1, 0.5) m
             radius of piston - Rp - (0.02, 0.04) m
     """
-
-    # 5.72
-    # [0.22759787898721132, 0.1179539530478348, 170742.99973942252, 0.0030649285122781172, 0.1945437293158895,
-    # 0.02969740379346559, 5508.651741337037]
-
-    # 5.659
-    # [0.20057940644612615, 0.09296024791629555, 70816.23598171223, 0.004088326139245712, 0.2995078683326422,
-    # 0.03554130090484798, 3911.1736625844583]
-
-    # 5.67
-    # [0.29782652950466626, 0.1278568956275774, 98542.27223684711, 0.0055843550349363585, 0.3654223978744685,
-    # 0.029086120013843354, 2204.6409017118917]
-
-    # 5.73
-    # [0.29167760039360136, 0.16287376035864523, 196240.11538343632, 0.004053528909644406, 0.3328770360491726,
-    # 0.03338539866008866, 3835.046508285344]
-
-    # 5.72
-    # [0.2923267012567824, 0.19065723161207404, 135736.80144742876, 0.0023804678835232292, 0.16654835147538863,
-    # 0.02868447929729715, 1630.0399232167974]
-
-    # 5.58
-    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315,
-    # 0.30093142628474456, 0.024947758891551694, 1469.2146204772644]
-
-    # unknown time
-    # [0.29342833084413933, 0.16037627405090937, 132086.6856449127, 0.004518855095953315, 0.30093142628474456,
-    # 0.024947758891551694, 1469.2146204772644]
-
-    # 5.6699999999999235
-    # [0.19739815303094518, 0.09346809312765124, 169667.59784325594, 0.004126413728920994, 0.3275365103149462,
-    # 0.0327935037139186, 8462.017978586722]
-
-    # 5.649999999999924
-    # [0.1919382517333743, 0.0893634089702165, 97938.03198283388, 0.004948947886315307, 0.40893735489112343,
-    # 0.028672510065196756, 3438.3636208460707]
-
-    # 5.569999999999926
-    # [0.27185975586418787, 0.07226214955804353, 105810.88670226459, 0.002660184276023843, 0.14686578163436,
-    # 0.025537158491719152, 7083.541559707305]
