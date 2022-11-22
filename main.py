@@ -3,6 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 from rk4 import rk4
 from train_motion import train_motion
 from optimize_method import optimize, local_optimize, new_optimization_method
