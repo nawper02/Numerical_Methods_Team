@@ -2,7 +2,7 @@
 # LAB 08
 
 import numpy as np
-from train_motion import train_motion, Slipped
+from train_motion import train_motion
 from rk4 import rk4
 from scipy.optimize import minimize
 
@@ -166,19 +166,19 @@ def new_optimization_method(params, params_bounds, tol):
     # Create bounds for all parameters
     bounds = (Lt_bounds, Rt_bounds, P0_bounds, Rg_bounds, Ls_bounds, Rp_bounds, dens_bounds)
 
-    # # Create initial guess for parameters
-    # Lt = params['Lt']
-    # Rt = params['Rt']
-    # P0 = params['P0']
-    # Rg = params['Rg']
-    # Ls = params['Ls']
-    # Rp = params['Rp']
-    # dens = params['dens']
-    # x0 = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
-    #
-    # # minimize the run_race_simulation function
-    #
-    # res = minimize(run_race_simulation, x0, method='Nelder-Mead', bounds=bounds, tol=tol)
+    # Create initial guess for parameters
+    Lt = params['Lt']
+    Rt = params['Rt']
+    P0 = params['P0']
+    Rg = params['Rg']
+    Ls = params['Ls']
+    Rp = params['Rp']
+    dens = params['dens']
+    x0 = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
+
+    # minimize the run_race_simulation function
+
+    res = minimize(run_race_simulation, x0, method='Nelder-Mead', bounds=bounds, tol=tol)
 
     # Run random optimization to find a good starting point
     res = optimize(params_bounds, 100)

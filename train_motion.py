@@ -16,10 +16,6 @@ Mw = 0.1  # kg
 y0 = [0, 0]  # pos, vel
 
 
-class Slipped(Exception):
-    pass
-
-
 def train_motion(t, y, params):
     """
     t: current time (seconds)
