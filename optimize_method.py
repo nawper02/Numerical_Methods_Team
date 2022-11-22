@@ -177,7 +177,7 @@ def exhaustive_search(params, params_bounds):
     Rg_range = np.linspace(Rg_bounds[0], Rg_bounds[1], num_spaces)
     Ls_range = np.linspace(Ls_bounds[0], Ls_bounds[1], num_spaces)
     Rp_range = np.linspace(Rp_bounds[0], Rp_bounds[1], num_spaces)
-    #dens_range = np.linspace(dens_bounds[0], dens_bounds[1], num_spaces)
+    # dens_range = np.linspace(dens_bounds[0], dens_bounds[1], num_spaces)
     dens_range = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
 
     best_params = None
@@ -185,17 +185,10 @@ def exhaustive_search(params, params_bounds):
     iters = 0
 
     for lt in Lt_range:
-        print(f"Percent done: {(iters / pow(num_spaces, 7))* 100}%")
         for rt in Rt_range:
             for p0 in P0_range:
                 for rg in Rg_range:
-                    if iters != 0:
-                        res = Res(best_params, best_time)
-                        with open('race_times.csv', 'a', newline='') as file:
-                            writer = csv.writer(file, delimiter=',')
-                            writer.writerow(
-                                [res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'],
-                                 res.x['dens']])
+                    print(f"Percent done: {(iters / pow(num_spaces, 7)) * 100}%")
                     for ls in Ls_range:
                         for rp in Rp_range:
                             for dens in dens_range:
@@ -208,8 +201,18 @@ def exhaustive_search(params, params_bounds):
 
                                 # if this is not the first trial, compare to best_params and best_time
                                 if raceTime < best_time:
+                                    print(f"New best parameters found!")
+                                    res = Res(best_params, best_time)
                                     best_params = params
                                     best_time = raceTime
+
+                                    if iters != 0 and best_time < 7:
+                                        with open('race_times.csv', 'a', newline='') as file:
+                                            writer = csv.writer(file, delimiter=',')
+                                            writer.writerow(
+                                                [res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'],
+                                                 res.x['Rp'],
+                                                 res.x['dens']])
                                     #print(f"Best parameters so far:")
                                     #print(f"\tLt: {best_params[0]}")
                                     #print(f"\tRt: {best_params[1]}")
