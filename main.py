@@ -4,9 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-from rk4 import rk4
-from train_motion import train_motion
-from optimize_method import optimize, local_optimize, exhaustive_search
+from optimize_method import optimize, exhaustive_search, random_search, run_race_simulation
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -23,68 +21,49 @@ def main():
     Rg_bounds = (0.002, 0.01)
     Ls_bounds = (0.1, 0.5)
     Rp_bounds = (0.02, 0.04)
-    dens_bounds = (1200, 8940)
-
+    dens_bounds = (1400, 1200, 7700, 8000, 4500, 8940, 2700)
     # Initialize params dict to be in between bounds
 
-    params = {
-        "Lt": (Lt_bounds[0] + Lt_bounds[1]) / 2,
-        "Rt": (Rt_bounds[0] + Rt_bounds[1]) / 2,
-        "P0": P0_bounds[1],
-        "Rg": (Rg_bounds[0] + Rg_bounds[1]) / 2,
-        "Ls": (Ls_bounds[0] + Ls_bounds[1]) / 2,
-        "Rp": (Rp_bounds[0] + Rp_bounds[1]) / 2,
-        "dens": (dens_bounds[0] + dens_bounds[1]) / 2
-    }
-
-    # Make params_bounds dictionary
-
-    params_bounds = {
-        "Lt": Lt_bounds,
-        "Rt": Rt_bounds,
-        "P0": P0_bounds,
-        "Rg": Rg_bounds,
-        "Ls": Ls_bounds,
-        "Rp": Rp_bounds,
-        "dens": dens_bounds}
+    params = {"Lt": {"bounds": Lt_bounds, "value": 0.25},
+              "Rt": {"bounds": Rt_bounds, "value": 0.125},
+              "P0": {"bounds": P0_bounds, "value": 100000},
+              "Rg": {"bounds": Rg_bounds, "value": 0.006},
+              "Ls": {"bounds": Ls_bounds, "value": 0.3},
+              "Rp": {"bounds": Rp_bounds, "value": 0.03},
+              "dens": {"bounds": dens_bounds, "value": 4500}
+              }
 
     num_trials = 2888
+    num_spaces = 6
 
     # Run optimization
 
     new_method = True
 
     if new_method:
-        print("Running scipy.optimize.minimize")
-        res = exhaustive_search(params, params_bounds)
+        print("Running exhaustive search...")
+        res = optimize(exhaustive_search, params, num_spaces)
     else:
-        print("Running Randomized Optimization")
-        res = optimize(params_bounds, num_trials)
+        print("Running random search...")
+        res = optimize(random_search, params, num_trials)
         print("Completed coarse optimization, beginning local optimization with dist = 0.5")
-        res = local_optimize(res.x, num_trials, .5, params_bounds)
+        res = optimize(random_search, res.x, num_trials, dist=0.5)
         print(".5 local optimization complete, beginning local optimization with dist = 0.1")
-        res = local_optimize(res.x, num_trials, .1, params_bounds)
+        res = optimize(random_search, res.x, num_trials, dist=0.1)
         print(".1 local optimization complete, beginning local optimization with dist = 0.01")
-        res = local_optimize(res.x, num_trials, .01, params_bounds)
+        res = optimize(random_search, res.x, num_trials, dist=0.01)
 
     # Print optimization results
 
     print(f"Final parameters:")
-    print(f"\tLt: {res.x['Lt']}")
-    print(f"\tRt: {res.x['Rt']}")
-    print(f"\tP0: {res.x['P0']}")
-    print(f"\tRg: {res.x['Rg']}")
-    print(f"\tLs: {res.x['Ls']}")
-    print(f"\tRp: {res.x['Rp']}")
-    print(f"\tdensity: {res.x['dens']}")
+    for idx, key in enumerate(res.x):
+        print(f"{key}: {res.x[key]['value']}")
     print(f"Final Optimized time: {res.time}")
     print(f"Copyable: {res.list}")
 
     # Run final simulation
-
-    h = 0.01
-    tspan = np.arange(0.0, 10, h)
-    t, y = rk4(train_motion, tspan, y0, h, res.x)
+    final_params = res.x
+    t, y = run_race_simulation(final_params, returnVec=True)
 
     # Plot results
 

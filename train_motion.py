@@ -26,13 +26,13 @@ def train_motion(t, y, params):
 
     # Unpack parameters
     if type(params) == dict:
-        Lt = params["Lt"]
-        Rt = params["Rt"]
-        P0 = params["P0"]
-        Rg = params["Rg"]
-        Ls = params["Ls"]
-        Rp = params["Rp"]
-        dens = params["dens"]
+        Lt = params["Lt"]['value']
+        Rt = params["Rt"]['value']
+        P0 = params["P0"]['value']
+        Rg = params["Rg"]['value']
+        Ls = params["Ls"]['value']
+        Rp = params["Rp"]['value']
+        dens = params["dens"]['value']
     elif type(params) == list:
         Lt = params[0]
         Rt = params[1]
