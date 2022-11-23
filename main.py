@@ -49,6 +49,7 @@ def main():
         "dens": dens_bounds}
 
     num_trials = 2888
+    num_spaces = 11
 
     # Run optimization
 
