@@ -102,6 +102,7 @@ def exhaustive_search(params, num):
 
     best_params = None
     best_time = None
+    iters = 0
 
     for Lt in params['Lt']['range']:
         params['Lt']['value'] = Lt
@@ -130,13 +131,19 @@ def exhaustive_search(params, num):
                                     print(f"New best parameters found!")
                                     best_params = params
                                     best_time = raceTime
+                                    iterPercent = iters / (num_spaces ** 7) * 100
 
                                     with open('race_times.csv', 'a', newline='') as file:
                                         writer = csv.writer(file, delimiter=',')
                                         writer.writerow([best_time, best_params['Lt']['value'], best_params['Rt']['value'],
                                                         best_params['P0']['value'], best_params['Rg']['value'],
                                                         best_params['Ls']['value'], best_params['Rp']['value'],
-                                                        best_params['dens']['value']])
+                                                        best_params['dens']['value'], iterPercent])
+
+                                if iters % int(num_spaces ** 7 / 4) == 0:
+                                    roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
+                                    print(f"Roughly {roundedPercent}% complete.")
+                                iters += 1
     else:
         res = Res(best_params, best_time)
     return res
