@@ -123,6 +123,12 @@ def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
+def random_density():
+    dens_options = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
+    # return a random choice from dens_options
+    return np.random.choice(dens_options)
+
+
 def optimize(params_bounds, num_trials):
     best_params = None
     best_time = None
@@ -134,7 +140,7 @@ def optimize(params_bounds, num_trials):
         Rg = random_param(params_bounds["Rg"])
         Ls = random_param(params_bounds["Ls"])
         Rp = random_param(params_bounds["Rp"])
-        dens = random_param(params_bounds["dens"])
+        dens = random_density()
 
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
         raceTime = run_race_simulation(params)
@@ -201,7 +207,7 @@ def local_optimize(params, num_trials, dist, params_bounds):
         Rg = random_param(Rg_bounds)
         Ls = random_param(Ls_bounds)
         Rp = random_param(Rp_bounds)
-        dens = random_param(dens_bounds)
+        dens = random_density()
 
         params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
         raceTime = run_race_simulation(params)
