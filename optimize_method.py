@@ -78,20 +78,21 @@ def print_table_3(params):
     closest_material = min(materials, key=lambda x: abs(materials[x] - dens))
 
     # Print Table 3
+    n_digits = 4
     print("Table 3: Train Physical Quantities")
-    print(f"\tLength of Train: {Lt}")
-    print(f"\tOuter Diameter of train: {2 * Rt}")
-    print(f"\tHeight of train: {Ht}")
+    print(f"\tLength of Train: {round(Lt, n_digits)} m")
+    print(f"\tOuter Diameter of train: {round(2 * Rt, n_digits)} m")
+    print(f"\tHeight of train: {round(Ht, n_digits)} m")
     print(f"\tMaterial of train: {closest_material}")
-    print(f"\tTotal Mass of Train: {m}")
-    print(f"\tTrain frontal area: {Af}")
-    print(f"\tInitial Pressure: {P0}")
-    print(f"\tInitial tank volume: {V0}")
-    print(f"\tPinion Gear Radius: {Rg}")
-    print(f"\tLength of stroke: {Ls}")
-    print(f"\tTotal length of piston: {Lp}")
-    print(f"\tDiameter of piston: {2 * Rp}")
-    print(f"\tMass of piston: {mp}")
+    print(f"\tTotal Mass of Train: {round(m, n_digits)} kg")
+    print(f"\tTrain frontal area: {round(Af, n_digits)} m^2")
+    print(f"\tInitial Pressure: {round(P0, n_digits)} Pa")
+    print(f"\tInitial tank volume: {round(V0, n_digits)} m^3")
+    print(f"\tPinion Gear Radius: {round(Rg, n_digits)} m")
+    print(f"\tLength of stroke: {round(Ls, n_digits)} m")
+    print(f"\tTotal length of piston: {round(Lp, n_digits)} m")
+    print(f"\tDiameter of piston: {round(2 * Rp, n_digits)} m")
+    print(f"\tMass of piston: {round(mp, n_digits)} kg")
 
 
 def run_race_simulation(params):
@@ -103,6 +104,11 @@ def run_race_simulation(params):
         return random_cost  # 100
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return random_cost  # 99
+    if 2 * params[1] > 0.2: # if the trains width exceeds 0.2m, return a large time
+        return random_cost
+    # if the trains height exceeds 0.23 m, return a large time
+    if (2 * params[1]) + Rw > 0.23:
+        return random_cost
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:

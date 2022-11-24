@@ -86,10 +86,12 @@ def main():
     # Run final simulation
 
     if use_specific_params:
+        #         Lt,                  Rt,                  P0,                Rg,                  Ls,                  Rp,                  dens
         params = [0.23977311977864832, 0.15316445340447332, 141323.8613071816, 0.00225291559585558, 0.12517876533759145, 0.03444447899391548, 3882.6608325269735]
         time = run_race_simulation(params)
         res = Res(params, time)
         print_table_3(params)
+        print(f"Final Optimized time: {res.time}")
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -103,6 +105,9 @@ def main():
     ax2.plot(t, y[:, 0], '-b', label='Position')
     ax1.plot(t, y[:, 1], 'r--', label='Velocity')
     ax2.plot(res.time, 10, 'go', label='Finish Time')
+    ax2.axvline(res.time, color='g', linestyle='--', label='Finish Time')
+    ax2.axhline(10, color='g', linestyle='--', label='Finish Position')
+    ax2.axhline(12.5, color='b', linestyle='--', label='End of Track')
 
     ax2.set_xlabel('Time (s)')
     ax2.set_ylabel('Position (m)', color='b')
