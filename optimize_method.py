@@ -78,22 +78,22 @@ def print_table_3(params):
     closest_material = min(materials, key=lambda x: abs(materials[x] - dens))
 
     # Print Table 3
-    n_digits = 4
-    print("Table 3: Train Physical Quantities")
-    print(f"\tLength of Train: {round(Lt, n_digits)} m")
-    print(f"\tOuter Diameter of train: {round(2 * Rt, n_digits)} m")
-    print(f"\tHeight of train: {round(Ht, n_digits)} m")
-    print(f"\tMaterial of train: {closest_material}")
-    print(f"\tTotal Mass of Train: {round(m, n_digits)} kg")
-    print(f"\tTrain frontal area: {round(Af, n_digits)} m^2")
-    print(f"\tInitial Pressure: {round(P0, n_digits)} Pa")
-    print(f"\tInitial tank volume: {round(V0, n_digits)} m^3")
-    print(f"\tPinion Gear Radius: {round(Rg, n_digits)} m")
-    print(f"\tLength of stroke: {round(Ls, n_digits)} m")
-    print(f"\tTotal length of piston: {round(Lp, n_digits)} m")
-    print(f"\tDiameter of piston: {round(2 * Rp, n_digits)} m")
-    print(f"\tMass of piston: {round(mp, n_digits)} kg")
 
+    # same as the above code, but without rounding
+    print("Table 3: Train Physical Quantities")
+    print(f"\tLength of Train: {Lt} m")
+    print(f"\tOuter Diameter of train: {2 * Rt} m")
+    print(f"\tHeight of train: {Ht} m")
+    print(f"\tMaterial of train: {closest_material}")
+    print(f"\tTotal Mass of Train: {m} kg")
+    print(f"\tTrain frontal area: {Af} m^2")
+    print(f"\tInitial Pressure: {P0} Pa")
+    print(f"\tInitial tank volume: {V0} m^3")
+    print(f"\tPinion Gear Radius: {Rg} m")
+    print(f"\tLength of stroke: {Ls} m")
+    print(f"\tTotal length of piston: {Lp} m")
+    print(f"\tDiameter of piston: {2 * Rp} m")
+    print(f"\tMass of piston: {mp} kg")
 
 def run_race_simulation(params):
     random_cost = np.random.uniform(99.0, 999.0)

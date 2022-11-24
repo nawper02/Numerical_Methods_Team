@@ -82,12 +82,17 @@ def main():
         print(f"\tdensity: {res.x['dens']}")
         print(f"Final Optimized time: {res.time}")
         print(f"Copyable: {res.list}")
+        print_table_3(params)
 
     # Run final simulation
 
     if use_specific_params:
+        # The following params are presented in the memo
         #         Lt,                  Rt,                  P0,                Rg,                  Ls,                  Rp,                  dens
-        params = [0.23977311977864832, 0.15316445340447332, 141323.8613071816, 0.00225291559585558, 0.12517876533759145, 0.03444447899391548, 3882.6608325269735]
+        #params = [0.22846648696036723, 0.05466069781203025, 79287.9280621113, 0.005359712674866734, 0.4054846071410888, 0.030577956262483063, 8940.0]
+        # With available parts, the following params are the best we can do
+        #         Lt,                  Rt,       P0,                Rg,   Ls,     Rp,                   dens
+        params = [0.22846648696036723, 0.1683/2, 79287.9280621113, 0.007, 0.3048, 0.030577956262483063, 8940.0]
         time = run_race_simulation(params)
         res = Res(params, time)
         print_table_3(params)
@@ -188,7 +193,23 @@ if __name__ == "__main__":
             length of piston stroke - Ls - (0.1, 0.5) m
             radius of piston - Rp - (0.02, 0.04) m
     """
-
-    # 5.5299999999999265 seconds
-    #  Lt                   Rt                   P0                 Rg                   Ls                   Rp                   dens
-    # [0.23977311977864832, 0.15316445340447332, 141323.8613071816, 0.00225291559585558, 0.12517876533759145, 0.03444447899391548, 3882.6608325269735]
+    """
+    Chosen Design Parameters
+    Final Optimized time: 5.629999999999924
+              Lt                   Rt                   P0                 Rg                   Ls                   Rp                   dens
+    Copyable: [0.22846648696036723, 0.05466069781203025, 79287.9280621113, 0.005359712674866734, 0.4054846071410888, 0.030577956262483063, 8940.0]
+    Table 3: Train Physical Quantities
+        Length of Train: 0.25 m
+        Outer Diameter of train: 0.2 m
+        Height of train: 0.23 m
+        Material of train: Titanium
+        Total Mass of Train: 28.9006 kg
+        Train frontal area: 0.0982 m^2
+        Initial Pressure: 200000 Pa
+        Initial tank volume: 0.0007 m^3
+        Pinion Gear Radius: 0.006 m
+        Length of stroke: 0.3 m
+        Total length of piston: 0.45 m
+        Diameter of piston: 0.06 m
+        Mass of piston: 1.5904 kg
+    """
