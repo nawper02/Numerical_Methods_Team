@@ -16,6 +16,7 @@ Mw = 0.1  # kg
 y0 = [0, 0]  # pos, vel
 
 
+# Function that evaluates the motion of the train at a given state
 def train_motion(t, y, params):
     """
     t: current time (seconds)

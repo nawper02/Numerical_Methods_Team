@@ -18,6 +18,7 @@ Mw = 0.1  # kg
 y0 = [0, 0]  # pos, vel
 
 
+# Object to store the results of the optimization
 class Res(object):
     def __init__(self, params, time):
         # store params into dictionary x
@@ -27,6 +28,7 @@ class Res(object):
         self.list = [self.x["Lt"], self.x["Rt"], self.x["P0"], self.x["Rg"], self.x["Ls"], self.x["Rp"], self.x["dens"]]
 
 
+# Helper method to print table 3 for the memo
 def print_table_3(params):
     # Unpack parameters
     if type(params) == dict:
@@ -95,6 +97,9 @@ def print_table_3(params):
     print(f"\tDiameter of piston: {2 * Rp} m")
     print(f"\tMass of piston: {mp} kg")
 
+
+# Method that takes in a list of parameters and returns the time it takes to complete the race.
+# if the race is not completed,
 def run_race_simulation(params):
     random_cost = np.random.uniform(99.0, 999.0)
     h = 0.01
@@ -106,29 +111,31 @@ def run_race_simulation(params):
         return random_cost  # 99
     if 2 * params[1] > 0.2: # if the trains width exceeds 0.2m, return a large time
         return random_cost
-    # if the trains height exceeds 0.23 m, return a large time
-    if (2 * params[1]) + Rw > 0.23:
+    if (2 * params[1]) + Rw > 0.23: # if the trains height exceeds 0.23 m, return a large time
         return random_cost
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
                     return random_cost  # 105
-                return t[index]
+                return t[index] # return the time it took to complete the race
             else:
                 pass
 
 
+# Helper method to retun a random value within the bounds of the parameter
 def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
+# Helper method to chose a random density from the list of densities
 def random_density():
     dens_options = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
     # return a random choice from dens_options
     return np.random.choice(dens_options)
 
 
+# Method to perform random optimization on the global scale
 def optimize(params_bounds, num_trials):
     best_params = None
     best_time = None
@@ -171,6 +178,8 @@ def optimize(params_bounds, num_trials):
     return res
 
 
+# Helper method to create a tuple of parameter bounds in a range around the parameter
+# Accounts for strict boundaries
 def create_bounds_in_range(var, dist, bounds):
     lower, upper = bounds
     var_s = dist * var
@@ -186,6 +195,7 @@ def create_bounds_in_range(var, dist, bounds):
     return bounds
 
 
+# Method to perform random optimization on the local scale
 def local_optimize(params, num_trials, dist, params_bounds):
     # Create local bounds for each parameter
     Lt_bounds = create_bounds_in_range(params['Lt'], dist, params_bounds['Lt'])
@@ -237,6 +247,7 @@ def local_optimize(params, num_trials, dist, params_bounds):
     return res
 
 
+# Method to perform exhaustive search optimization
 def exhaustive_search(params, params_bounds):
     # unpack params_bounds
     Lt_bounds = params_bounds['Lt']

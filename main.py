@@ -1,6 +1,11 @@
 # KIN BLANDFORD, AUSTIN NEFF, HYRUM COLEMAN
-# LAB 08
+# NUMERICAL METHODS DESIGN PROJECT
+"""
+This program simulates the motion of a train on a track. It also finds the optimum
+parameters for the train to reach the distance in the fastest possible time..
+"""
 
+# Import libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
@@ -9,14 +14,9 @@ from train_motion import train_motion
 from optimize_method import optimize, local_optimize, exhaustive_search
 from optimize_method import run_race_simulation, Res, print_table_3
 
-# TODO:
-#  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
-#  - Decrease random region based off of previous results
-#  - Run optimization again
-
 
 def main():
-    # Initialize bounds
+    # Initialize parameter bounds
 
     Lt_bounds = (0.2, 0.3)
     Rt_bounds = (0.05, 0.2)
@@ -49,16 +49,22 @@ def main():
         "Rp": Rp_bounds,
         "dens": dens_bounds}
 
+    # Variable to control the number of trials to be simulated
+
     num_trials = 2888
 
     # Run optimization
 
-    new_method = False
+    # Two boolean options to control the behavior of the program
+    # New method: runs exhaustive search
+    # Use specific params: runs the simulation with a set of given parameters and does not perform optimization
+
+    exaustive_search = False
     use_specific_params = True
 
     if not use_specific_params:
-        if new_method:
-            print("Running scipy.optimize.minimize")
+        if exaustive_search:
+            print("Performing exhaustive search...")
             res = exhaustive_search(params, params_bounds)
         else:
             print("Running Randomized Optimization")
@@ -89,14 +95,17 @@ def main():
     if use_specific_params:
         # The following params are presented in the memo
         #         Lt,                  Rt,                  P0,                Rg,                  Ls,                  Rp,                  dens
-        #params = [0.22846648696036723, 0.05466069781203025, 79287.9280621113, 0.005359712674866734, 0.4054846071410888, 0.030577956262483063, 8940.0]
+        params = [0.22846648696036723, 0.05466069781203025, 79287.9280621113, 0.005359712674866734, 0.4054846071410888, 0.030577956262483063, 8940.0]
         # With available parts, the following params are the best we can do
         #         Lt,                  Rt,       P0,                Rg,   Ls,     Rp,                   dens
-        params = [0.22846648696036723, 0.1683/2, 79287.9280621113, 0.007, 0.3048, 0.030577956262483063, 8940.0]
+        #params = [0.22846648696036723, 0.1683/2, 78281.9280621113, 0.007, 0.3048, 0.034677956262483063, 8940.0]
+
         time = run_race_simulation(params)
         res = Res(params, time)
         print_table_3(params)
         print(f"Final Optimized time: {res.time}")
+
+    # Initialize step size, time, and simulate the motion of the train
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
