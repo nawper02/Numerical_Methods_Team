@@ -27,6 +27,73 @@ class Res(object):
         self.list = [self.x["Lt"], self.x["Rt"], self.x["P0"], self.x["Rg"], self.x["Ls"], self.x["Rp"], self.x["dens"]]
 
 
+def print_table_3(params):
+    # Unpack parameters
+    if type(params) == dict:
+        Lt = params["Lt"]
+        Rt = params["Rt"]
+        P0 = params["P0"]
+        Rg = params["Rg"]
+        Ls = params["Ls"]
+        Rp = params["Rp"]
+        dens = params["dens"]
+    elif type(params) == list:
+        Lt = params[0]
+        Rt = params[1]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        dens = params[6]
+    elif type(params) == np.ndarray:
+        Lt = params[0]
+        Rt = params[1]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        dens = params[6]
+    else:
+        raise TypeError("params must be a dictionary, list, or numpy array")
+
+    # Compute mass of train
+    pp = 1250
+    Lp = 1.5 * Ls
+    mp = pp * np.pi * pow(Rp, 2) * Lp
+    mt = dens * Lp * np.pi * ((Rt ** 2) - pow(Rt / 1.15, 2))
+    m = mp + mt  # total mass of train in kg
+
+    # Compute Volume of Tank
+    V0 = Lt * np.pi * Rp * Rp
+
+    # Compute Height of Train
+    Ht = (2 * Rt) + Rw
+
+    # Compute Frontal Area of Train
+    Af = 2 * np.pi * Rt * Rt
+
+    # Find closest material to optimal density
+    materials = {"PVC": 1400.0, "Acrylic": 1200.0, "Galvanized Steel": 7700.0, "Stainless Steel": 8000.0,
+                 "Titanium": 4500.0, "Copper": 8940.0, "Aluminum": 2700.0}
+    closest_material = min(materials, key=lambda x: abs(materials[x] - dens))
+
+    # Print Table 3
+    print("Table 3: Train Physical Quantities")
+    print(f"\tLength of Train: {Lt}")
+    print(f"\tOuter Diameter of train: {2 * Rt}")
+    print(f"\tHeight of train: {Ht}")
+    print(f"\tMaterial of train: {closest_material}")
+    print(f"\tTotal Mass of Train: {m}")
+    print(f"\tTrain frontal area: {Af}")
+    print(f"\tInitial Pressure: {P0}")
+    print(f"\tInitial tank volume: {V0}")
+    print(f"\tPinion Gear Radius: {Rg}")
+    print(f"\tLength of stroke: {Ls}")
+    print(f"\tTotal length of piston: {Lp}")
+    print(f"\tDiameter of piston: {2 * Rp}")
+    print(f"\tMass of piston: {mp}")
+
+
 def run_race_simulation(params):
     random_cost = np.random.uniform(99.0, 999.0)
     h = 0.01
@@ -40,7 +107,7 @@ def run_race_simulation(params):
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    return random_cost   # 105
+                    return random_cost  # 105
                 return t[index]
             else:
                 pass
@@ -51,7 +118,6 @@ def random_param(bounds):
 
 
 def optimize(params_bounds, num_trials):
-
     best_params = None
     best_time = None
     for trial in range(num_trials):
@@ -177,7 +243,7 @@ def exhaustive_search(params, params_bounds):
     Rg_range = np.linspace(Rg_bounds[0], Rg_bounds[1], num_spaces)
     Ls_range = np.linspace(Ls_bounds[0], Ls_bounds[1], num_spaces)
     Rp_range = np.linspace(Rp_bounds[0], Rp_bounds[1], num_spaces)
-    #dens_range = np.linspace(dens_bounds[0], dens_bounds[1], num_spaces)
+    # dens_range = np.linspace(dens_bounds[0], dens_bounds[1], num_spaces)
     dens_range = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
 
     best_params = None
@@ -185,7 +251,7 @@ def exhaustive_search(params, params_bounds):
     iters = 0
 
     for lt in Lt_range:
-        print(f"Percent done: {(iters / pow(num_spaces, 7))* 100}%")
+        print(f"Percent done: {(iters / pow(num_spaces, 7)) * 100}%")
         for rt in Rt_range:
             for p0 in P0_range:
                 for rg in Rg_range:
@@ -210,20 +276,18 @@ def exhaustive_search(params, params_bounds):
                                 if raceTime < best_time:
                                     best_params = params
                                     best_time = raceTime
-                                    #print(f"Best parameters so far:")
-                                    #print(f"\tLt: {best_params[0]}")
-                                    #print(f"\tRt: {best_params[1]}")
-                                    #print(f"\tP0: {best_params[2]}")
-                                    #print(f"\tRg: {best_params[3]}")
-                                    #print(f"\tLs: {best_params[4]}")
-                                    #print(f"\tRp: {best_params[5]}")
-                                    #print(f"\tdensity: {best_params[6]}")
-                                    #print(f"Optimized cost (time): {best_time}")
-                                    #print(f"Copyable: {best_params.tolist()}\n")
+                                    # print(f"Best parameters so far:")
+                                    # print(f"\tLt: {best_params[0]}")
+                                    # print(f"\tRt: {best_params[1]}")
+                                    # print(f"\tP0: {best_params[2]}")
+                                    # print(f"\tRg: {best_params[3]}")
+                                    # print(f"\tLs: {best_params[4]}")
+                                    # print(f"\tRp: {best_params[5]}")
+                                    # print(f"\tdensity: {best_params[6]}")
+                                    # print(f"Optimized cost (time): {best_time}")
+                                    # print(f"Copyable: {best_params.tolist()}\n")
                                 iters += 1
 
     else:
         res = Res(best_params, best_time)
     return res
-
-

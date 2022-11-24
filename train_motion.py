@@ -56,7 +56,6 @@ def train_motion(t, y, params):
     V0 = Lt * np.pi * Rp * Rp
 
     # Compute mass of train
-
     pp = 1250
     Lp = 1.5 * Ls
     mp = pp * np.pi * pow(Rp, 2) * Lp

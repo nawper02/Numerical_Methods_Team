@@ -7,6 +7,7 @@ import csv
 from rk4 import rk4
 from train_motion import train_motion
 from optimize_method import optimize, local_optimize, exhaustive_search
+from optimize_method import run_race_simulation, Res, print_table_3
 
 # TODO:
 #  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
@@ -52,35 +53,43 @@ def main():
 
     # Run optimization
 
-    new_method = True
+    new_method = False
+    use_specific_params = True
 
-    if new_method:
-        print("Running scipy.optimize.minimize")
-        res = exhaustive_search(params, params_bounds)
-    else:
-        print("Running Randomized Optimization")
-        res = optimize(params_bounds, num_trials)
-        print("Completed coarse optimization, beginning local optimization with dist = 0.5")
-        res = local_optimize(res.x, num_trials, .5, params_bounds)
-        print(".5 local optimization complete, beginning local optimization with dist = 0.1")
-        res = local_optimize(res.x, num_trials, .1, params_bounds)
-        print(".1 local optimization complete, beginning local optimization with dist = 0.01")
-        res = local_optimize(res.x, num_trials, .01, params_bounds)
+    if not use_specific_params:
+        if new_method:
+            print("Running scipy.optimize.minimize")
+            res = exhaustive_search(params, params_bounds)
+        else:
+            print("Running Randomized Optimization")
+            res = optimize(params_bounds, num_trials)
+            print("Completed coarse optimization, beginning local optimization with dist = 0.5")
+            res = local_optimize(res.x, num_trials, .5, params_bounds)
+            print(".5 local optimization complete, beginning local optimization with dist = 0.1")
+            res = local_optimize(res.x, num_trials, .1, params_bounds)
+            print(".1 local optimization complete, beginning local optimization with dist = 0.01")
+            res = local_optimize(res.x, num_trials, .01, params_bounds)
 
-    # Print optimization results
+        # Print optimization results
 
-    print(f"Final parameters:")
-    print(f"\tLt: {res.x['Lt']}")
-    print(f"\tRt: {res.x['Rt']}")
-    print(f"\tP0: {res.x['P0']}")
-    print(f"\tRg: {res.x['Rg']}")
-    print(f"\tLs: {res.x['Ls']}")
-    print(f"\tRp: {res.x['Rp']}")
-    print(f"\tdensity: {res.x['dens']}")
-    print(f"Final Optimized time: {res.time}")
-    print(f"Copyable: {res.list}")
+        print(f"Final parameters:")
+        print(f"\tLt: {res.x['Lt']}")
+        print(f"\tRt: {res.x['Rt']}")
+        print(f"\tP0: {res.x['P0']}")
+        print(f"\tRg: {res.x['Rg']}")
+        print(f"\tLs: {res.x['Ls']}")
+        print(f"\tRp: {res.x['Rp']}")
+        print(f"\tdensity: {res.x['dens']}")
+        print(f"Final Optimized time: {res.time}")
+        print(f"Copyable: {res.list}")
 
     # Run final simulation
+
+    if use_specific_params:
+        params = [0.23977311977864832, 0.15316445340447332, 141323.8613071816, 0.00225291559585558, 0.12517876533759145, 0.03444447899391548, 3882.6608325269735]
+        time = run_race_simulation(params)
+        res = Res(params, time)
+        print_table_3(params)
 
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -109,9 +118,9 @@ def main():
 
     # First save finish time and its associated parameters to a csv file
 
-    with open('race_times.csv', 'a', newline='') as file:
-        writer = csv.writer(file, delimiter=',')
-        writer.writerow([res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'], res.x['dens']])
+    #with open('race_times.csv', 'a', newline='') as file:
+    #    writer = csv.writer(file, delimiter=',')
+    #    writer.writerow([res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'], res.x['dens']])
 
     # Then save the plot as a pdf
 
@@ -174,3 +183,7 @@ if __name__ == "__main__":
             length of piston stroke - Ls - (0.1, 0.5) m
             radius of piston - Rp - (0.02, 0.04) m
     """
+
+    # 5.5299999999999265 seconds
+    #  Lt                   Rt                   P0                 Rg                   Ls                   Rp                   dens
+    # [0.23977311977864832, 0.15316445340447332, 141323.8613071816, 0.00225291559585558, 0.12517876533759145, 0.03444447899391548, 3882.6608325269735]
