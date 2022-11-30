@@ -6,6 +6,9 @@ from train_motion import train_motion
 from rk4 import rk4
 import csv
 import random
+import time
+import itertools
+import multiprocessing
 
 # Initialize global constants
 g = 9.81  # m/s^2
@@ -20,9 +23,9 @@ y0 = [0, 0]  # pos, vel
 
 
 class Res(object):
-    def __init__(self, params, time):
+    def __init__(self, params, race_time):
         self.x = params
-        self.time = time
+        self.time = race_time
         self.list = [self.x['Lt']['value'], self.x['Rt']['value'],
                      self.x['P0']['value'], self.x['Rg']['value'],
                      self.x['Ls']['value'], self.x['Rp']['value'],
@@ -104,46 +107,39 @@ def exhaustive_search(params, num):
     best_time = None
     iters = 0
 
-    for Lt in params['Lt']['range']:
-        params['Lt']['value'] = Lt
-        for Rt in params['Rt']['range']:
-            params['Rt']['value'] = Rt
-            for P0 in params['P0']['range']:
-                params['P0']['value'] = P0
-                for Rg in params['Rg']['range']:
-                    params['Rg']['value'] = Rg
-                    for Ls in params['Ls']['range']:
-                        params['Ls']['value'] = Ls
-                        for Rp in params['Rp']['range']:
-                            params['Rp']['value'] = Rp
-                            for dens in params['dens']['range']:
-                                params['dens']['value'] = dens
+    pool = multiprocessing.Pool()
+    start = time.perf_counter()
+    for param in itertools.product(*[params[key]['range'] for key in params]):
+        iters += 1
+        for idx, key in enumerate(params):
+            params[key]['value'] = param[idx]
+        race_time = run_race_simulation(params)
 
-                                raceTime = run_race_simulation(params)
+        if best_params is None:
+            best_params = params
+            best_time = race_time
 
-                                # If this is the first trial, set best_params and best_time
-                                if best_params is None:
-                                    best_params = params
-                                    best_time = raceTime
+        # If this is not the first trial, compare to best_params and best_time
+        if race_time < best_time and race_time < 7:
+            print(f"New best parameters found!")
+            best_params = params
+            best_time = race_time
+            iterPercent = iters / (num_spaces ** 7) * 100
 
-                                # If this is not the first trial, compare to best_params and best_time
-                                if raceTime < best_time and raceTime < 7:
-                                    print(f"New best parameters found!")
-                                    best_params = params
-                                    best_time = raceTime
-                                    iterPercent = iters / (num_spaces ** 7) * 100
+            with open('race_times.csv', 'a', newline='') as file:
+                writer = csv.writer(file, delimiter=',')
+                writer.writerow([best_time, best_params['Lt']['value'], best_params['Rt']['value'],
+                                 best_params['P0']['value'], best_params['Rg']['value'],
+                                 best_params['Ls']['value'], best_params['Rp']['value'],
+                                 best_params['dens']['value'], iterPercent])
 
-                                    with open('race_times.csv', 'a', newline='') as file:
-                                        writer = csv.writer(file, delimiter=',')
-                                        writer.writerow([best_time, best_params['Lt']['value'], best_params['Rt']['value'],
-                                                        best_params['P0']['value'], best_params['Rg']['value'],
-                                                        best_params['Ls']['value'], best_params['Rp']['value'],
-                                                        best_params['dens']['value'], iterPercent])
+        if iters % int(num_spaces ** 7 / 100) == 0:
+            end = time.perf_counter()
+            roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
+            print(f"Roughly {roundedPercent}% complete.")
+            print(f"Time to complete: {end - start} seconds")
+            start = time.perf_counter()
 
-                                if iters % int(num_spaces ** 7 / 4) == 0:
-                                    roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
-                                    print(f"Roughly {roundedPercent}% complete.")
-                                iters += 1
     else:
         res = Res(best_params, best_time)
     return res
