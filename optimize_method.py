@@ -106,17 +106,22 @@ def run_race_simulation(params):
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, params)
     if y is True:  # if train slips, return a large time
+        print("Train slipped")
         return random_cost  # 100
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
+        print("Train didn't reach finish line")
         return random_cost  # 99
     if 2 * params[1] > 0.2: # if the trains width exceeds 0.2m, return a large time
+        print("Train width exceeded 0.2m")
         return random_cost
     if (2 * params[1]) + Rw > 0.23: # if the trains height exceeds 0.23 m, return a large time
+        print("Train height exceeded 0.23m")
         return random_cost
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
+                    print("Train went too far")
                     return random_cost  # 105
                 return t[index] # return the time it took to complete the race
             else:
