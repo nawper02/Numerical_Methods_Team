@@ -156,9 +156,11 @@ def create_bounds_in_range(var, bounds, dist):
 
 def optimize(method, params, num, dist=1):
     # Create local bounds for each parameter
-    for idx, key in enumerate(params):
-        if key != 'dens':
-            params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
+
+    if dist != 1:
+        for idx, key in enumerate(params):
+            if key != 'dens':
+                params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
 
     res = method(params, num)
 
