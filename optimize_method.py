@@ -133,6 +133,8 @@ def exhaustive_search(params, num):
                 roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
                 print(f"Roughly {roundedPercent}% complete.")
         else:
+            for idx, key in enumerate(params):
+                params[key]['value'] = best_params[idx]
             res = Res(best_params, best_time)
         return res
 
