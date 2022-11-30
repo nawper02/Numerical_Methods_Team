@@ -6,7 +6,6 @@ from train_motion import train_motion
 from rk4 import rk4
 import csv
 import random
-import time
 import itertools
 import multiprocessing
 
@@ -37,17 +36,17 @@ def run_race_simulation(params, returnVec=False):
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, params)
     if y is True:  # if train slips, return a large time
-        return 100
+        return 100, params
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
-        return 101
+        return 101, params
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    return 102
+                    return 102, params
                 if returnVec:
-                    return t, y
-                return t[index]
+                    return t, params, y
+                return t[index], params
             else:
                 pass
 
@@ -107,42 +106,35 @@ def exhaustive_search(params, num):
     best_time = None
     iters = 0
 
-    pool = multiprocessing.Pool()
-    start = time.perf_counter()
-    for param in itertools.product(*[params[key]['range'] for key in params]):
-        iters += 1
-        for idx, key in enumerate(params):
-            params[key]['value'] = param[idx]
-        race_time = run_race_simulation(params)
+    # q:
 
-        if best_params is None:
-            best_params = params
-            best_time = race_time
+    with multiprocessing.Pool() as pool:
+        for res in pool.imap_unordered(run_race_simulation, itertools.product(*[params[key]['range'] for key in params])):
+            race_time, res_params = res
+            iters += 1
 
-        # If this is not the first trial, compare to best_params and best_time
-        if race_time < best_time and race_time < 7:
-            print(f"New best parameters found!")
-            best_params = params
-            best_time = race_time
-            iterPercent = iters / (num_spaces ** 7) * 100
+            if best_params is None:
+                best_params = res_params
+                best_time = race_time
 
-            with open('race_times.csv', 'a', newline='') as file:
-                writer = csv.writer(file, delimiter=',')
-                writer.writerow([best_time, best_params['Lt']['value'], best_params['Rt']['value'],
-                                 best_params['P0']['value'], best_params['Rg']['value'],
-                                 best_params['Ls']['value'], best_params['Rp']['value'],
-                                 best_params['dens']['value'], iterPercent])
+            # If this is not the first trial, compare to best_params and best_time
+            if race_time < best_time and race_time < 7:
+                print(f"New best parameters found!")
+                best_params = res_params
+                best_time = race_time
+                iterPercent = iters / (num_spaces ** 7) * 100
 
-        if iters % int(num_spaces ** 7 / 100) == 0:
-            end = time.perf_counter()
-            roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
-            print(f"Roughly {roundedPercent}% complete.")
-            print(f"Time to complete: {end - start} seconds")
-            start = time.perf_counter()
+                with open('race_times.csv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter=',')
+                    writer.writerow([best_time, best_params[0], best_params[1], best_params[2], best_params[3],
+                                     best_params[4], best_params[5], best_params[6], iterPercent])
 
-    else:
-        res = Res(best_params, best_time)
-    return res
+            if iters % int(num_spaces ** 7 / 100) == 0:
+                roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
+                print(f"Roughly {roundedPercent}% complete.")
+        else:
+            res = Res(best_params, best_time)
+        return res
 
 
 def create_bounds_in_range(var, bounds, dist):
