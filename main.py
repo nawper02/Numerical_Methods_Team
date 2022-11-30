@@ -7,9 +7,8 @@ import csv
 from optimize_method import optimize, exhaustive_search, random_search, run_race_simulation
 
 # TODO:
-#  - Run optimization -- may have to adapt cost (train motion) to not use dictionary, but list instead
-#  - Decrease random region based off of previous results
-#  - Run optimization again
+#  - Use random search and exhaustive search to optimize the train's parameters
+#  - Read csv file to get best time from previous runs
 
 
 def main():
@@ -32,7 +31,6 @@ def main():
               "Rp": {"bounds": Rp_bounds, "value": 0.03},
               "dens": {"bounds": dens_bounds, "value": 4500}
               }
-
     num_trials = 2888
     num_spaces = 6
 
