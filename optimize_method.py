@@ -6,6 +6,8 @@ from train_motion import train_motion
 from rk4 import rk4
 import csv
 import random
+import itertools
+import multiprocessing
 
 # Initialize global constants
 g = 9.81  # m/s^2
@@ -20,9 +22,9 @@ y0 = [0, 0]  # pos, vel
 
 
 class Res(object):
-    def __init__(self, params, time):
+    def __init__(self, params, race_time):
         self.x = params
-        self.time = time
+        self.time = race_time
         self.list = [self.x['Lt']['value'], self.x['Rt']['value'],
                      self.x['P0']['value'], self.x['Rg']['value'],
                      self.x['Ls']['value'], self.x['Rp']['value'],
@@ -34,17 +36,17 @@ def run_race_simulation(params, returnVec=False):
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, params)
     if y is True:  # if train slips, return a large time
-        return 100
+        return 100, params
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
-        return 101
+        return 101, params
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    return 102
+                    return 102, params
                 if returnVec:
-                    return t, y
-                return t[index]
+                    return t, params, y
+                return t[index], params
             else:
                 pass
 
@@ -53,10 +55,8 @@ def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
-def random_search(params, num_trials):
+def random_search(params, num_trials, best_time=None, best_params=None):
 
-    best_params = None
-    best_time = None
     for trial in range(num_trials):
         # Randomize Parameters
         for idx, key in enumerate(params):
@@ -82,8 +82,15 @@ def random_search(params, num_trials):
         if trial % int(num_trials / 4) == 0:
             print(f"Trial {trial} of {num_trials} complete.")
             print(f"Best parameters so far:")
-            for idx, key in enumerate(best_params):
-                print(f"\t{key} = {best_params[key]['value']}")
+
+            if type(best_params) == dict:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{key} = {best_params[key]['value']}")
+            elif type(best_params) == list:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{idx} = {best_params[idx]}")
+            else:
+                print("Something went wrong.")
             print(f"Optimized cost (time): {best_time}")
 
     else:
@@ -91,7 +98,7 @@ def random_search(params, num_trials):
     return res
 
 
-def exhaustive_search(params, num):
+def exhaustive_search(params, num, best_time=None, best_params=None):
     num_spaces = num
 
     for idx, key in enumerate(params):
@@ -101,52 +108,39 @@ def exhaustive_search(params, num):
             params[key]['range'] = params[key]['bounds']
 
     best_params = None
-    best_time = None
     iters = 0
 
-    for Lt in params['Lt']['range']:
-        params['Lt']['value'] = Lt
-        for Rt in params['Rt']['range']:
-            params['Rt']['value'] = Rt
-            for P0 in params['P0']['range']:
-                params['P0']['value'] = P0
-                for Rg in params['Rg']['range']:
-                    params['Rg']['value'] = Rg
-                    for Ls in params['Ls']['range']:
-                        params['Ls']['value'] = Ls
-                        for Rp in params['Rp']['range']:
-                            params['Rp']['value'] = Rp
-                            for dens in params['dens']['range']:
-                                params['dens']['value'] = dens
+    # q:
 
-                                raceTime = run_race_simulation(params)
+    with multiprocessing.Pool() as pool:
+        for res in pool.imap_unordered(run_race_simulation, itertools.product(*[params[key]['range'] for key in params])):
+            race_time, res_params = res
+            iters += 1
 
-                                # If this is the first trial, set best_params and best_time
-                                if best_params is None:
-                                    best_params = params
-                                    best_time = raceTime
+            if best_params is None:
+                best_params = res_params
+                best_time = race_time
 
-                                # If this is not the first trial, compare to best_params and best_time
-                                if raceTime < best_time and raceTime < 7:
-                                    print(f"New best parameters found!")
-                                    best_params = params
-                                    best_time = raceTime
-                                    iterPercent = iters / (num_spaces ** 7) * 100
+            # If this is not the first trial, compare to best_params and best_time
+            if race_time < best_time and race_time < 7:
+                print(f"New best parameters found!")
+                best_params = res_params
+                best_time = race_time
+                iterPercent = iters / (num_spaces ** 7) * 100
 
-                                    with open('race_times.csv', 'a', newline='') as file:
-                                        writer = csv.writer(file, delimiter=',')
-                                        writer.writerow([best_time, best_params['Lt']['value'], best_params['Rt']['value'],
-                                                        best_params['P0']['value'], best_params['Rg']['value'],
-                                                        best_params['Ls']['value'], best_params['Rp']['value'],
-                                                        best_params['dens']['value'], iterPercent])
+                with open('race_times.csv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter=',')
+                    writer.writerow([best_time, best_params[0], best_params[1], best_params[2], best_params[3],
+                                     best_params[4], best_params[5], best_params[6], iterPercent])
 
-                                if iters % int(num_spaces ** 7 / 4) == 0:
-                                    roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
-                                    print(f"Roughly {roundedPercent}% complete.")
-                                iters += 1
-    else:
-        res = Res(best_params, best_time)
-    return res
+            if iters % int(num_spaces ** 7 / 100) == 0:
+                roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
+                print(f"Roughly {roundedPercent}% complete.")
+        else:
+            for idx, key in enumerate(params):
+                params[key]['value'] = best_params[idx]
+            res = Res(best_params, best_time)
+        return res
 
 
 def create_bounds_in_range(var, bounds, dist):
@@ -164,12 +158,14 @@ def create_bounds_in_range(var, bounds, dist):
     return bounds
 
 
-def optimize(method, params, num, dist=1):
+def optimize(method, params, num, dist=1, best_time=None, best_params=None):
     # Create local bounds for each parameter
-    for idx, key in enumerate(params):
-        if key != 'dens':
-            params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
 
-    res = method(params, num)
+    if dist != 1:
+        for idx, key in enumerate(params):
+            if key != 'dens':
+                params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
+
+    res = method(params, num, best_time, best_params)
 
     return res

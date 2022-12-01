@@ -33,7 +33,7 @@ def train_motion(t, y, params):
         Ls = params["Ls"]['value']
         Rp = params["Rp"]['value']
         dens = params["dens"]['value']
-    elif type(params) == list:
+    elif type(params) == list or type(params) == tuple:
         Lt = params[0]
         Rt = params[1]
         P0 = params[2]
@@ -50,7 +50,7 @@ def train_motion(t, y, params):
         Rp = params[5]
         dens = params[6]
     else:
-        raise TypeError("params must be a dictionary, list, or numpy array")
+        raise TypeError("params must be a dictionary, list, or numpy array :)")
 
     # Compute V0
     V0 = Lt * np.pi * Rp * Rp
