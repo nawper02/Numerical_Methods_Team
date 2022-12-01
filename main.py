@@ -118,8 +118,14 @@ def main():
         for idx, key in enumerate(params):
             params[key]["value"] = float(best_params[idx])
 
-        time, params = run_race_simulation(params)
-        res = Res(params, time)
+        time, params, y = run_race_simulation(params, returnVec=True)
+        for index, position in enumerate(y[:, 0]):
+            if position >= 10:
+                time_to_finish = time[index]
+                break
+        else:
+            time_to_finish = 200
+        res = Res(params, time_to_finish)
 
     # Print results
     print(f"Final parameters:")

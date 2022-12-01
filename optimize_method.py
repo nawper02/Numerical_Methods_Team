@@ -114,12 +114,20 @@ def run_race_simulation(params, returnVec=False):
         return 101, params
     if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
         return 102, params
-    if (2 * params[1]) + Rw > .23:  # if train is too tall, return a large time
-        return 103, params
-    if (2 * params[1]) > .2: # if train is too wide, return a large time
-        return 104, params
+    if type(params) == list or type(params) == tuple or type(params) == np.ndarray:
+        if (2 * params[1]) + Rw > .23:  # if train is too tall, return a large time
+            return 103, params
+        if (2 * params[1]) > .2: # if train is too wide, return a large time
+            return 104, params
+    elif type(params) == dict:
+        if (2 * params["Rt"]['value']) + Rw > .23:
+            return 103, params
+        if (2 * params["Rt"]['value']) > .2:
+            return 104, params
+    else:
+        raise TypeError("params must be a dictionary, list, or numpy array (run_race_simulation)")
     if returnVec:
-        return t, params
+        return t, params, y
     for index, position in enumerate(y[:, 0]):
         if position >= 10:
             return t[index], params
