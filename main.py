@@ -6,11 +6,8 @@ parameters for the train to reach the distance in the fastest possible time..
 """
 
 # Import libraries
-import numpy as np
 import matplotlib.pyplot as plt
 import csv
-from rk4 import rk4
-from train_motion import train_motion
 from optimize_method import Res, print_table_3
 from optimize_method import optimize, exhaustive_search, random_search, run_race_simulation
 
