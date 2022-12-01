@@ -138,8 +138,6 @@ def main():
     # Run final simulation
     final_params = res.x
     t, params, y = run_race_simulation(final_params, returnVec=True)
-    gaming = y
-
 
     # Plot results
 
