@@ -5,6 +5,9 @@ import numpy as np
 from train_motion import train_motion
 from rk4 import rk4
 import csv
+import random
+import itertools
+import multiprocessing
 
 # Initialize global constants
 g = 9.81  # m/s^2
@@ -20,12 +23,13 @@ y0 = [0, 0]  # pos, vel
 
 # Object to store the results of the optimization
 class Res(object):
-    def __init__(self, params, time):
-        # store params into dictionary x
-        self.x = {"Lt": params[0], "Rt": params[1], "P0": params[2], "Rg": params[3], "Ls": params[4], "Rp": params[5],
-                  "dens": params[6]}
-        self.time = time
-        self.list = [self.x["Lt"], self.x["Rt"], self.x["P0"], self.x["Rg"], self.x["Ls"], self.x["Rp"], self.x["dens"]]
+    def __init__(self, params, race_time):
+        self.x = params
+        self.time = race_time
+        self.list = [self.x['Lt']['value'], self.x['Rt']['value'],
+                     self.x['P0']['value'], self.x['Rg']['value'],
+                     self.x['Ls']['value'], self.x['Rp']['value'],
+                     self.x['dens']['value']]
 
 
 # Helper method to print table 3 for the memo
@@ -39,7 +43,7 @@ def print_table_3(params):
         Ls = params["Ls"]
         Rp = params["Rp"]
         dens = params["dens"]
-    elif type(params) == list:
+    elif type(params) == list or type(params) == tuple:
         Lt = params[0]
         Rt = params[1]
         P0 = params[2]
@@ -74,7 +78,7 @@ def print_table_3(params):
     # Compute Frontal Area of Train
     Af = 2 * np.pi * Rt * Rt
 
-    # Find closest material to optimal density
+    # Find the closest material to optimal density
     materials = {"PVC": 1400.0, "Acrylic": 1200.0, "Galvanized Steel": 7700.0, "Stainless Steel": 8000.0,
                  "Titanium": 4500.0, "Copper": 8940.0, "Aluminum": 2700.0}
     closest_material = min(materials, key=lambda x: abs(materials[x] - dens))
@@ -100,40 +104,32 @@ def print_table_3(params):
 
 # Method that takes in a list of parameters and returns the time it takes to complete the race.
 # if the race is not completed,
-def run_race_simulation(params):
-    random_cost = np.random.uniform(99.0, 999.0)
+def run_race_simulation(params, returnVec=False):
     h = 0.01
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, params)
     if y is True:  # if train slips, return a large time
-        print("Train slipped")
-        return random_cost  # 100
+        return 100, params
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
-        print("Train didn't reach finish line")
-        return random_cost  # 99
-    if 2 * params[1] > 0.2: # if the trains width exceeds 0.2m, return a large time
-        print("Train width exceeded 0.2m")
-        return random_cost
-    if (2 * params[1]) + Rw > 0.23: # if the trains height exceeds 0.23 m, return a large time
-        print("Train height exceeded 0.23m")
-        return random_cost
+        return 101, params
     else:
         for index, position in enumerate(y[:, 0]):
             if position >= 10:
                 if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    print("Train went too far")
-                    return random_cost  # 105
-                return t[index] # return the time it took to complete the race
+                    return 102, params
+                if returnVec:
+                    return t, params, y
+                return t[index], params
             else:
                 pass
 
 
-# Helper method to retun a random value within the bounds of the parameter
+# Helper method to return a random value within the bounds of the parameter
 def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
-# Helper method to chose a random density from the list of densities
+# Helper method to choose a random density from the list of densities
 def random_density():
     dens_options = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
     # return a random choice from dens_options
@@ -141,51 +137,93 @@ def random_density():
 
 
 # Method to perform random optimization on the global scale
-def optimize(params_bounds, num_trials):
-    best_params = None
-    best_time = None
+def random_search(params, num_trials, best_time=None, best_params=None):
+
     for trial in range(num_trials):
         # Randomize Parameters
-        Lt = random_param(params_bounds["Lt"])
-        Rt = random_param(params_bounds["Rt"])
-        P0 = random_param(params_bounds["P0"])
-        Rg = random_param(params_bounds["Rg"])
-        Ls = random_param(params_bounds["Ls"])
-        Rp = random_param(params_bounds["Rp"])
-        dens = random_density()
+        for idx, key in enumerate(params):
+            if key != 'dens':
+                params[key]['value'] = random_param(params[key]['bounds'])
+            else:
+                params[key]['value'] = params[key]['bounds'][random.randint(0, len(params[key]['bounds']) - 1)]
 
-        params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
-        raceTime = run_race_simulation(params)
+        # Run Simulation
 
-        # if this is the first trial, set best_params and best_time
+        raceTime, yVec = run_race_simulation(params)
+
+        # If this is the first trial, set best_params and best_time
         if best_params is None:
             best_params = params
             best_time = raceTime
 
-        # if this is not the first trial, compare to best_params and best_time
+        # If this is not the first trial, compare to best_params and best_time
         if raceTime < best_time:
             best_params = params
             best_time = raceTime
+
+        if trial % int(num_trials / 4) == 0:
+            print(f"Trial {trial} of {num_trials} complete.")
             print(f"Best parameters so far:")
-            print(f"\tLt: {best_params[0]}")
-            print(f"\tRt: {best_params[1]}")
-            print(f"\tP0: {best_params[2]}")
-            print(f"\tRg: {best_params[3]}")
-            print(f"\tLs: {best_params[4]}")
-            print(f"\tRp: {best_params[5]}")
-            print(f"\tdensity: {best_params[6]}")
+
+            if type(best_params) == dict:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{key} = {best_params[key]['value']}")
+            elif type(best_params) == list:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{idx} = {best_params[idx]}")
+            else:
+                print("Something went wrong.")
             print(f"Optimized cost (time): {best_time}")
-            print(f"Copyable: {best_params.tolist()}\n")
 
     else:
         res = Res(best_params, best_time)
-
     return res
+
+
+def exhaustive_search(params, num, best_time=None, best_params=None):
+    num_spaces = num
+
+    for idx, key in enumerate(params):
+        if key != 'dens':
+            params[key]['range'] = np.linspace(params[key]['bounds'][0], params[key]['bounds'][1], num_spaces)
+        else:
+            params[key]['range'] = params[key]['bounds']
+    iters = 0
+
+    with multiprocessing.Pool() as pool:
+        for res in pool.imap_unordered(run_race_simulation, itertools.product(*[params[key]['range'] for key in params])):
+            race_time, res_params = res
+            iters += 1
+
+            if best_params is None:
+                best_params = res_params
+                best_time = race_time
+
+            # If this is not the first trial, compare to best_params and best_time
+            if race_time < best_time and race_time < 7:
+                print(f"New best parameters found!")
+                best_params = res_params
+                best_time = race_time
+                iterPercent = iters / (num_spaces ** 7) * 100
+
+                with open('race_times.csv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter=',')
+                    writer.writerow([best_time, best_params[0], best_params[1], best_params[2], best_params[3],
+                                     best_params[4], best_params[5], best_params[6], iterPercent])
+
+            if iters % int(num_spaces ** 7 / 100) == 0:
+                roundedPercent = round(iters / (num_spaces ** 7) * 100, 3)
+                print(f"Roughly {roundedPercent}% complete.")
+        else:
+            for idx, key in enumerate(params):
+                params[key]['value'] = best_params[idx]
+            res = Res(best_params, best_time)
+        return res
 
 
 # Helper method to create a tuple of parameter bounds in a range around the parameter
 # Accounts for strict boundaries
-def create_bounds_in_range(var, dist, bounds):
+def create_bounds_in_range(var, bounds, dist):
     lower, upper = bounds
     var_s = dist * var
     if var - var_s < lower:
@@ -201,121 +239,14 @@ def create_bounds_in_range(var, dist, bounds):
 
 
 # Method to perform random optimization on the local scale
-def local_optimize(params, num_trials, dist, params_bounds):
+def optimize(method, params, num, dist=1, best_time=None, best_params=None):
     # Create local bounds for each parameter
-    Lt_bounds = create_bounds_in_range(params['Lt'], dist, params_bounds['Lt'])
 
-    Rt_bounds = create_bounds_in_range(params['Rt'], dist, params_bounds['Rt'])
-    P0_bounds = create_bounds_in_range(params['P0'], dist, params_bounds['P0'])
-    Rg_bounds = create_bounds_in_range(params['Rg'], dist, params_bounds['Rg'])
-    Ls_bounds = create_bounds_in_range(params['Ls'], dist, params_bounds['Ls'])
-    Rp_bounds = create_bounds_in_range(params['Rp'], dist, params_bounds['Rp'])
-    dens_bounds = create_bounds_in_range(params['dens'], dist, params_bounds['dens'])
+    if dist != 1:
+        for idx, key in enumerate(params):
+            if key != 'dens':
+                params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
 
-    best_params = None
-    best_time = None
+    res = method(params, num, best_time, best_params)
 
-    for trial in range(num_trials):
-        Lt = random_param(Lt_bounds)
-        Rt = random_param(Rt_bounds)
-        P0 = random_param(P0_bounds)
-        Rg = random_param(Rg_bounds)
-        Ls = random_param(Ls_bounds)
-        Rp = random_param(Rp_bounds)
-        dens = random_density()
-
-        params = np.array([Lt, Rt, P0, Rg, Ls, Rp, dens])
-        raceTime = run_race_simulation(params)
-
-        # if this is the first trial, set best_params and best_time
-        if best_params is None:
-            best_params = params
-            best_time = raceTime
-
-        # if this is not the first trial, compare to best_params and best_time
-        if raceTime < best_time:
-            best_params = params
-            best_time = raceTime
-            print(f"Best parameters so far:")
-            print(f"\tLt: {best_params[0]}")
-            print(f"\tRt: {best_params[1]}")
-            print(f"\tP0: {best_params[2]}")
-            print(f"\tRg: {best_params[3]}")
-            print(f"\tLs: {best_params[4]}")
-            print(f"\tRp: {best_params[5]}")
-            print(f"\tdensity: {best_params[6]}")
-            print(f"Optimized cost (time): {best_time}")
-            print(f"Copyable: {best_params.tolist()}\n")
-
-    else:
-        res = Res(best_params, best_time)
-    return res
-
-
-# Method to perform exhaustive search optimization
-def exhaustive_search(params, params_bounds):
-    # unpack params_bounds
-    Lt_bounds = params_bounds['Lt']
-    Rt_bounds = params_bounds['Rt']
-    P0_bounds = params_bounds['P0']
-    Rg_bounds = params_bounds['Rg']
-    Ls_bounds = params_bounds['Ls']
-    Rp_bounds = params_bounds['Rp']
-    dens_bounds = params_bounds['dens']
-
-    num_spaces = 6
-
-    Lt_range = np.linspace(Lt_bounds[0], Lt_bounds[1], num_spaces)
-    Rt_range = np.linspace(Rt_bounds[0], Rt_bounds[1], num_spaces)
-    P0_range = np.linspace(P0_bounds[0], P0_bounds[1], num_spaces)
-    Rg_range = np.linspace(Rg_bounds[0], Rg_bounds[1], num_spaces)
-    Ls_range = np.linspace(Ls_bounds[0], Ls_bounds[1], num_spaces)
-    Rp_range = np.linspace(Rp_bounds[0], Rp_bounds[1], num_spaces)
-    # dens_range = np.linspace(dens_bounds[0], dens_bounds[1], num_spaces)
-    dens_range = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
-
-    best_params = None
-    best_time = None
-    iters = 0
-
-    for lt in Lt_range:
-        print(f"Percent done: {(iters / pow(num_spaces, 7)) * 100}%")
-        for rt in Rt_range:
-            for p0 in P0_range:
-                for rg in Rg_range:
-                    if iters != 0:
-                        res = Res(best_params, best_time)
-                        with open('race_times.csv', 'a', newline='') as file:
-                            writer = csv.writer(file, delimiter=',')
-                            writer.writerow(
-                                [res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'],
-                                 res.x['dens']])
-                    for ls in Ls_range:
-                        for rp in Rp_range:
-                            for dens in dens_range:
-                                params = np.array([lt, rt, p0, rg, ls, rp, dens])
-                                raceTime = run_race_simulation(params)
-                                # if this is the first trial, set best_params and best_time
-                                if best_params is None:
-                                    best_params = params
-                                    best_time = raceTime
-
-                                # if this is not the first trial, compare to best_params and best_time
-                                if raceTime < best_time:
-                                    best_params = params
-                                    best_time = raceTime
-                                    # print(f"Best parameters so far:")
-                                    # print(f"\tLt: {best_params[0]}")
-                                    # print(f"\tRt: {best_params[1]}")
-                                    # print(f"\tP0: {best_params[2]}")
-                                    # print(f"\tRg: {best_params[3]}")
-                                    # print(f"\tLs: {best_params[4]}")
-                                    # print(f"\tRp: {best_params[5]}")
-                                    # print(f"\tdensity: {best_params[6]}")
-                                    # print(f"Optimized cost (time): {best_time}")
-                                    # print(f"Copyable: {best_params.tolist()}\n")
-                                iters += 1
-
-    else:
-        res = Res(best_params, best_time)
     return res

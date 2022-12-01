@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import csv
 from rk4 import rk4
 from train_motion import train_motion
-from optimize_method import optimize, local_optimize, exhaustive_search
-from optimize_method import run_race_simulation, Res, print_table_3
+from optimize_method import Res, print_table_3
+from optimize_method import optimize, exhaustive_search, random_search, run_race_simulation
 
 
 def main():
@@ -24,57 +24,74 @@ def main():
     Rg_bounds = (0.002, 0.01)
     Ls_bounds = (0.1, 0.5)
     Rp_bounds = (0.02, 0.04)
-    dens_bounds = (1200, 8940)
-
+    dens_bounds = (1400, 1200, 7700, 8000, 4500, 8940, 2700)
     # Initialize params dict to be in between bounds
-
-    params = {
-        "Lt": (Lt_bounds[0] + Lt_bounds[1]) / 2,
-        "Rt": (Rt_bounds[0] + Rt_bounds[1]) / 2,
-        "P0": P0_bounds[1],
-        "Rg": (Rg_bounds[0] + Rg_bounds[1]) / 2,
-        "Ls": (Ls_bounds[0] + Ls_bounds[1]) / 2,
-        "Rp": (Rp_bounds[0] + Rp_bounds[1]) / 2,
-        "dens": (dens_bounds[0] + dens_bounds[1]) / 2
-    }
-
-    # Make params_bounds dictionary
-
-    params_bounds = {
-        "Lt": Lt_bounds,
-        "Rt": Rt_bounds,
-        "P0": P0_bounds,
-        "Rg": Rg_bounds,
-        "Ls": Ls_bounds,
-        "Rp": Rp_bounds,
-        "dens": dens_bounds}
 
     # Variable to control the number of trials to be simulated
 
+    params = {"Lt": {"bounds": Lt_bounds, "value": 0.25},
+              "Rt": {"bounds": Rt_bounds, "value": 0.125},
+              "P0": {"bounds": P0_bounds, "value": 100000},
+              "Rg": {"bounds": Rg_bounds, "value": 0.006},
+              "Ls": {"bounds": Ls_bounds, "value": 0.3},
+              "Rp": {"bounds": Rp_bounds, "value": 0.03},
+              "dens": {"bounds": dens_bounds, "value": 4500}
+              }
     num_trials = 2888
-
     # Run optimization
 
     # Two boolean options to control the behavior of the program
     # New method: runs exhaustive search
     # Use specific params: runs the simulation with a set of given parameters and does not perform optimization
 
-    exaustive_search = False
+    do_exhaustive = False
     use_specific_params = True
+    num_spaces = 5
 
     if not use_specific_params:
-        if exaustive_search:
-            print("Performing exhaustive search...")
-            res = exhaustive_search(params, params_bounds)
+        print("Do you want to find new times, or refine old times?")
+        print("1. Find new times")
+        print("2. Refine old times")
+        choice = input("Enter 1 or 2: ")
+        if choice == "1":
+            print("Find new times selected")
+            do_exhaustive = True
+
+            print("How many spaces do you want to search?")
+            choice = input("Enter any number: ")
+            num_spaces = int(choice)
+        elif choice == "2":
+            print("Refine old times selected")
+            do_exhaustive = False
+
+            # read csv file to get best time and params
+            with open('race_times.csv', 'r') as f:
+                reader = csv.reader(f)
+                # search first column for lowest time, if a string is found, skip it
+                best_time = 1000
+                for row in reader:
+                    try:
+                        if float(row[0]) < best_time:
+                            best_time = float(row[0])
+                            best_params = row[1:]
+                    except ValueError:
+                        pass
+            for idx, key in enumerate(params):
+                params[key]["value"] = float(best_params[idx])
         else:
-            print("Running Randomized Optimization")
-            res = optimize(params_bounds, num_trials)
-            print("Completed coarse optimization, beginning local optimization with dist = 0.5")
-            res = local_optimize(res.x, num_trials, .5, params_bounds)
+            print("Invalid input, exiting program")
+            exit()
+
+        if do_exhaustive:
+            print("Running exhaustive search...")
+            res = optimize(exhaustive_search, params, num_spaces)
+        else:
+            print("Running random search...")
+            res = optimize(random_search, params, num_trials, dist=0.5, best_time=best_time, best_params=best_params)
             print(".5 local optimization complete, beginning local optimization with dist = 0.1")
-            res = local_optimize(res.x, num_trials, .1, params_bounds)
+            res = optimize(random_search, res.x, num_trials, dist=0.1, best_time=res.time, best_params=res.x)
             print(".1 local optimization complete, beginning local optimization with dist = 0.01")
-            res = local_optimize(res.x, num_trials, .01, params_bounds)
+            res = optimize(random_search, res.x, num_trials, dist=0.01, best_time=res.time, best_params=res.x)
 
         # Print optimization results
 
@@ -89,10 +106,7 @@ def main():
         print(f"Final Optimized time: {res.time}")
         print(f"Copyable: {res.list}")
         print_table_3(params)
-
-    # Run final simulation
-
-    if use_specific_params:
+    else:
         # The following params are presented in the memo
         #         Lt,           Rt,          P0,       Rg,    Ls,        Rp,            dens
         params = [0.2, 0.15500000000000003, 96000.0, 0.0028, 0.18, 0.026000000000000002, 1200]
@@ -108,6 +122,16 @@ def main():
     h = 0.01
     tspan = np.arange(0.0, 10, h)
     t, y = rk4(train_motion, tspan, y0, h, res.x)
+
+    print(f"Final parameters:")
+    for idx, key in enumerate(res.x):
+        print(f"{key}: {res.x[key]['value']}")
+    print(f"Final Optimized time: {res.time}")
+    print(f"Copyable: {res.list}")
+
+    # Run final simulation
+    final_params = res.x
+    t, y = run_race_simulation(final_params, returnVec=True)
 
     # Plot results
 
@@ -130,16 +154,6 @@ def main():
     fig.legend()
 
     plt.xlim(0, max(t))
-
-    # Save and show plot
-
-    # First save finish time and its associated parameters to a csv file
-
-    #with open('race_times.csv', 'a', newline='') as file:
-    #    writer = csv.writer(file, delimiter=',')
-    #    writer.writerow([res.time, res.x['Lt'], res.x['Rt'], res.x['P0'], res.x['Rg'], res.x['Ls'], res.x['Rp'], res.x['dens']])
-
-    # Then save the plot as a pdf
 
     plt.savefig("combined.pdf")
     plt.show()
