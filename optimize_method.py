@@ -114,6 +114,10 @@ def run_race_simulation(params, returnVec=False):
         return 101, params
     if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
         return 102, params
+    if (2 * params['Rt']['value']) + Rw > .23:  # if train is too tall, return a large time
+        return 103, params
+    if (2 * params['Rt']['value']) > .2: # if train is too wide, return a large time
+        return 104, params
     if returnVec:
         return t, params
     for index, position in enumerate(y[:, 0]):
