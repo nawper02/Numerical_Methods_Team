@@ -55,10 +55,8 @@ def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
-def random_search(params, num_trials):
+def random_search(params, num_trials, best_time=None, best_params=None):
 
-    best_params = None
-    best_time = None
     for trial in range(num_trials):
         # Randomize Parameters
         for idx, key in enumerate(params):
@@ -84,8 +82,15 @@ def random_search(params, num_trials):
         if trial % int(num_trials / 4) == 0:
             print(f"Trial {trial} of {num_trials} complete.")
             print(f"Best parameters so far:")
-            for idx, key in enumerate(best_params):
-                print(f"\t{key} = {best_params[key]['value']}")
+
+            if type(best_params) == dict:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{key} = {best_params[key]['value']}")
+            elif type(best_params) == list:
+                for idx, key in enumerate(best_params):
+                    print(f"\t{idx} = {best_params[idx]}")
+            else:
+                print("Something went wrong.")
             print(f"Optimized cost (time): {best_time}")
 
     else:
@@ -93,7 +98,7 @@ def random_search(params, num_trials):
     return res
 
 
-def exhaustive_search(params, num):
+def exhaustive_search(params, num, best_time=None, best_params=None):
     num_spaces = num
 
     for idx, key in enumerate(params):
@@ -103,7 +108,6 @@ def exhaustive_search(params, num):
             params[key]['range'] = params[key]['bounds']
 
     best_params = None
-    best_time = None
     iters = 0
 
     # q:
@@ -154,7 +158,7 @@ def create_bounds_in_range(var, bounds, dist):
     return bounds
 
 
-def optimize(method, params, num, dist=1):
+def optimize(method, params, num, dist=1, best_time=None, best_params=None):
     # Create local bounds for each parameter
 
     if dist != 1:
@@ -162,6 +166,6 @@ def optimize(method, params, num, dist=1):
             if key != 'dens':
                 params[key]['bounds'] = create_bounds_in_range(params[key]['value'], params[key]['bounds'], dist)
 
-    res = method(params, num)
+    res = method(params, num, best_time, best_params)
 
     return res

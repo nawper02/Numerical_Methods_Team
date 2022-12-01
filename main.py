@@ -35,21 +35,52 @@ def main():
     num_spaces = 6
 
     # Run optimization
+    new_method = False
 
-    new_method = True
+    # ask use if they want to find new times, or refine old times
+    print("Do you want to find new times, or refine old times?")
+    print("1. Find new times")
+    print("2. Refine old times")
+    choice = input("Enter 1 or 2: ")
+    if choice == "1":
+        print("Find new times selected")
+        new_method = True
+
+        print("How many spaces do you want to search?")
+        choice = input("Enter any number: ")
+        num_spaces = int(choice)
+    elif choice == "2":
+        print("Refine old times selected")
+        new_method = False
+
+        # read csv file to get best time and params
+        with open('race_times.csv', 'r') as f:
+            reader = csv.reader(f)
+            # search first column for lowest time, if a string is found, skip it
+            best_time = 1000
+            for row in reader:
+                try:
+                    if float(row[0]) < best_time:
+                        best_time = float(row[0])
+                        best_params = row[1:]
+                except ValueError:
+                    pass
+        for idx, key in enumerate(params):
+            params[key]["value"] = float(best_params[idx])
+    else:
+        print("Invalid input, exiting program")
+        exit()
 
     if new_method:
         print("Running exhaustive search...")
         res = optimize(exhaustive_search, params, num_spaces)
     else:
         print("Running random search...")
-        res = optimize(random_search, params, num_trials)
-        print("Completed coarse optimization, beginning local optimization with dist = 0.5")
-        res = optimize(random_search, res.x, num_trials, dist=0.5)
+        res = optimize(random_search, params, num_trials, dist=0.5, best_time=best_time, best_params=best_params)
         print(".5 local optimization complete, beginning local optimization with dist = 0.1")
-        res = optimize(random_search, res.x, num_trials, dist=0.1)
+        res = optimize(random_search, res.x, num_trials, dist=0.1, best_time=res.time, best_params=res.x)
         print(".1 local optimization complete, beginning local optimization with dist = 0.01")
-        res = optimize(random_search, res.x, num_trials, dist=0.01)
+        res = optimize(random_search, res.x, num_trials, dist=0.01, best_time=res.time, best_params=res.x)
 
     # Print optimization results
 
