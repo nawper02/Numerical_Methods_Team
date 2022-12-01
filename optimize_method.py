@@ -36,13 +36,13 @@ class Res(object):
 def print_table_3(params):
     # Unpack parameters
     if type(params) == dict:
-        Lt = params["Lt"]
-        Rt = params["Rt"]
-        P0 = params["P0"]
-        Rg = params["Rg"]
-        Ls = params["Ls"]
-        Rp = params["Rp"]
-        dens = params["dens"]
+        Lt = params["Lt"]['value']
+        Rt = params["Rt"]['value']
+        P0 = params["P0"]['value']
+        Rg = params["Rg"]['value']
+        Ls = params["Ls"]['value']
+        Rp = params["Rp"]['value']
+        dens = params["dens"]['value']
     elif type(params) == list or type(params) == tuple:
         Lt = params[0]
         Rt = params[1]
@@ -112,28 +112,18 @@ def run_race_simulation(params, returnVec=False):
         return 100, params
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return 101, params
-    else:
-        for index, position in enumerate(y[:, 0]):
-            if position >= 10:
-                if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    return 102, params
-                if returnVec:
-                    return t, params, y
-                return t[index], params
-            else:
-                pass
+    if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
+        return 102, params
+    if returnVec:
+        return t, params
+    for index, position in enumerate(y[:, 0]):
+        if position >= 10:
+            return t[index], params
 
 
 # Helper method to return a random value within the bounds of the parameter
 def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
-
-
-# Helper method to choose a random density from the list of densities
-def random_density():
-    dens_options = [1400.0, 1200.0, 7700.0, 8000.0, 4500.0, 8940.0, 2700.0]
-    # return a random choice from dens_options
-    return np.random.choice(dens_options)
 
 
 # Method to perform random optimization on the global scale
@@ -176,7 +166,10 @@ def random_search(params, num_trials, best_time=None, best_params=None):
             print(f"Optimized cost (time): {best_time}")
 
     else:
-        res = Res(best_params, best_time)
+        if type(best_params) == list:
+            for idx, key in enumerate(params):
+                params[key]['value'] = best_params[idx]
+        res = Res(params, best_time)
     return res
 
 
@@ -217,7 +210,7 @@ def exhaustive_search(params, num, best_time=None, best_params=None):
         else:
             for idx, key in enumerate(params):
                 params[key]['value'] = best_params[idx]
-            res = Res(best_params, best_time)
+            res = Res(params, best_time)
         return res
 
 

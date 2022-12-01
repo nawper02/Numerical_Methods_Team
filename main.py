@@ -45,8 +45,17 @@ def main():
     # Use specific params: runs the simulation with a set of given parameters and does not perform optimization
 
     do_exhaustive = False
-    use_specific_params = True
+    use_specific_params = False
     num_spaces = 5
+
+    choice = input("Use current best parameters? (y/n): ")
+    if choice == 'y':
+        use_specific_params = True
+    elif choice == 'n':
+        use_specific_params = False
+    else:
+        print("Invalid input. Exiting program.")
+        exit(1)
 
     if not use_specific_params:
         print("Do you want to find new times, or refine old times?")
@@ -62,6 +71,8 @@ def main():
             num_spaces = int(choice)
         elif choice == "2":
             print("Refine old times selected")
+            choice = input("How many trials do you want to run? ")
+            num_trials = int(choice)
             do_exhaustive = False
 
             # read csv file to get best time and params
@@ -76,8 +87,11 @@ def main():
                             best_params = row[1:]
                     except ValueError:
                         pass
+            # turn best time values into floats from strings
+            best_params = [float(i) for i in best_params]
             for idx, key in enumerate(params):
-                params[key]["value"] = float(best_params[idx])
+                params[key]['value'] = best_params[idx]
+
         else:
             print("Invalid input, exiting program")
             exit()
@@ -92,46 +106,37 @@ def main():
             res = optimize(random_search, res.x, num_trials, dist=0.1, best_time=res.time, best_params=res.x)
             print(".1 local optimization complete, beginning local optimization with dist = 0.01")
             res = optimize(random_search, res.x, num_trials, dist=0.01, best_time=res.time, best_params=res.x)
-
-        # Print optimization results
-
-        print(f"Final parameters:")
-        print(f"\tLt: {res.x['Lt']}")
-        print(f"\tRt: {res.x['Rt']}")
-        print(f"\tP0: {res.x['P0']}")
-        print(f"\tRg: {res.x['Rg']}")
-        print(f"\tLs: {res.x['Ls']}")
-        print(f"\tRp: {res.x['Rp']}")
-        print(f"\tdensity: {res.x['dens']}")
-        print(f"Final Optimized time: {res.time}")
-        print(f"Copyable: {res.list}")
-        print_table_3(params)
     else:
-        # The following params are presented in the memo
-        #         Lt,           Rt,          P0,       Rg,    Ls,        Rp,            dens
-        params = [0.2, 0.15500000000000003, 96000.0, 0.0028, 0.18, 0.026000000000000002, 1200]
-        # With available parts, the following params are the best we can do
+        # Read csv file to get params to run the simulation with
+        with open('race_times.csv', 'r') as f:
+            reader = csv.reader(f)
+            best_time = 1000
+            for row in reader:
+                try:
+                    if float(row[0]) < best_time:
+                        best_time = float(row[0])
+                        best_params = row[1:]
+                except ValueError:
+                    pass
+        for idx, key in enumerate(params):
+            params[key]["value"] = float(best_params[idx])
 
-        time = run_race_simulation(params)
+        time, params = run_race_simulation(params)
         res = Res(params, time)
-        print_table_3(params)
-        print(f"Final Optimized time: {res.time}")
 
-    # Initialize step size, time, and simulate the motion of the train
-
-    h = 0.01
-    tspan = np.arange(0.0, 10, h)
-    t, y = rk4(train_motion, tspan, y0, h, res.x)
-
+    # Print results
     print(f"Final parameters:")
     for idx, key in enumerate(res.x):
-        print(f"{key}: {res.x[key]['value']}")
+        print(f"\t{key}: {res.x[key]['value']}")
     print(f"Final Optimized time: {res.time}")
     print(f"Copyable: {res.list}")
+    print_table_3(params)
 
     # Run final simulation
     final_params = res.x
-    t, y = run_race_simulation(final_params, returnVec=True)
+    t, params, y = run_race_simulation(final_params, returnVec=True)
+    gaming = y
+
 
     # Plot results
 
