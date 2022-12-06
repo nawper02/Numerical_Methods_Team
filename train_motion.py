@@ -16,6 +16,7 @@ Mw = 0.1  # kg
 y0 = [0, 0]  # pos, vel
 
 
+# Function that evaluates the motion of the train at a given state
 def train_motion(t, y, params):
     """
     t: current time (seconds)
@@ -56,7 +57,6 @@ def train_motion(t, y, params):
     V0 = Lt * np.pi * Rp * Rp
 
     # Compute mass of train
-
     pp = 1250
     Lp = 1.5 * Ls
     mp = pp * np.pi * pow(Rp, 2) * Lp
@@ -85,12 +85,10 @@ def train_motion(t, y, params):
         accel = False
 
     # For housekeeping
-    # term_1 = (Rg * 70000 * Ap) / Rw
     term_1_seg_1 = Ap * Rg / Rw
     term_1_seg_2 = (P0 * V0) / (V0 + term_1_seg_1 * y[0])
 
     term_1 = term_1_seg_1 * term_1_seg_2
-    # term_1_exponential= (Rg * (P0 * np.exp(-0.1 * t)) * Ap) / Rw
     term_2 = (p * Cd * A * (y[1] ** 2)) / 2
     term_3 = m * g * Crr
     sum_masses = m + Mw

@@ -21,6 +21,7 @@ Mw = 0.1  # kg
 y0 = [0, 0]  # pos, vel
 
 
+# Object to store the results of the optimization
 class Res(object):
     def __init__(self, params, race_time):
         self.x = params
@@ -31,6 +32,78 @@ class Res(object):
                      self.x['dens']['value']]
 
 
+# Helper method to print table 3 for the memo
+def print_table_3(params):
+    # Unpack parameters
+    if type(params) == dict:
+        Lt = params["Lt"]['value']
+        Rt = params["Rt"]['value']
+        P0 = params["P0"]['value']
+        Rg = params["Rg"]['value']
+        Ls = params["Ls"]['value']
+        Rp = params["Rp"]['value']
+        dens = params["dens"]['value']
+    elif type(params) == list or type(params) == tuple:
+        Lt = params[0]
+        Rt = params[1]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        dens = params[6]
+    elif type(params) == np.ndarray:
+        Lt = params[0]
+        Rt = params[1]
+        P0 = params[2]
+        Rg = params[3]
+        Ls = params[4]
+        Rp = params[5]
+        dens = params[6]
+    else:
+        raise TypeError("params must be a dictionary, list, or numpy array")
+
+    # Compute mass of train
+    pp = 1250
+    Lp = 1.5 * Ls
+    mp = pp * np.pi * pow(Rp, 2) * Lp
+    mt = dens * Lp * np.pi * ((Rt ** 2) - pow(Rt / 1.15, 2))
+    m = mp + mt  # total mass of train in kg
+
+    # Compute Volume of Tank
+    V0 = Lt * np.pi * Rp * Rp
+
+    # Compute Height of Train
+    Ht = (2 * Rt) + Rw
+
+    # Compute Frontal Area of Train
+    Af = 2 * np.pi * Rt * Rt
+
+    # Find the closest material to optimal density
+    materials = {"PVC": 1400.0, "Acrylic": 1200.0, "Galvanized Steel": 7700.0, "Stainless Steel": 8000.0,
+                 "Titanium": 4500.0, "Copper": 8940.0, "Aluminum": 2700.0}
+    closest_material = min(materials, key=lambda x: abs(materials[x] - dens))
+
+    # Print Table 3
+
+    # same as the above code, but without rounding
+    print("Table 3: Train Physical Quantities")
+    print(f"\tLength of Train: {Lt} m")
+    print(f"\tOuter Diameter of train: {2 * Rt} m")
+    print(f"\tHeight of train: {Ht} m")
+    print(f"\tMaterial of train: {closest_material}")
+    print(f"\tTotal Mass of Train: {m} kg")
+    print(f"\tTrain frontal area: {Af} m^2")
+    print(f"\tInitial Pressure: {P0} Pa")
+    print(f"\tInitial tank volume: {V0} m^3")
+    print(f"\tPinion Gear Radius: {Rg} m")
+    print(f"\tLength of stroke: {Ls} m")
+    print(f"\tTotal length of piston: {Lp} m")
+    print(f"\tDiameter of piston: {2 * Rp} m")
+    print(f"\tMass of piston: {mp} kg")
+
+
+# Method that takes in a list of parameters and returns the time it takes to complete the race.
+# if the race is not completed,
 def run_race_simulation(params, returnVec=False):
     h = 0.01
     tspan = np.arange(0.0, 10, h)
@@ -39,22 +112,33 @@ def run_race_simulation(params, returnVec=False):
         return 100, params
     if max(y[:, 0]) < 10:  # if train doesn't reach the finish line, return a large time
         return 101, params
+    if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
+        return 102, params
+    if type(params) == list or type(params) == tuple or type(params) == np.ndarray:
+        if (2 * params[1]) + Rw > .23:  # if train is too tall, return a large time
+            return 103, params
+        if (2 * params[1]) > .2: # if train is too wide, return a large time
+            return 104, params
+    elif type(params) == dict:
+        if (2 * params["Rt"]['value']) + Rw > .23:
+            return 103, params
+        if (2 * params["Rt"]['value']) > .2:
+            return 104, params
     else:
-        for index, position in enumerate(y[:, 0]):
-            if position >= 10:
-                if max(y[:, 0]) > 12.5:  # if train goes too far, return a large time
-                    return 102, params
-                if returnVec:
-                    return t, params, y
-                return t[index], params
-            else:
-                pass
+        raise TypeError("params must be a dictionary, list, or numpy array (run_race_simulation)")
+    if returnVec:
+        return t, params, y
+    for index, position in enumerate(y[:, 0]):
+        if position >= 10:
+            return t[index], params
 
 
+# Helper method to return a random value within the bounds of the parameter
 def random_param(bounds):
     return np.random.uniform(bounds[0], bounds[1])
 
 
+# Method to perform random optimization on the global scale
 def random_search(params, num_trials, best_time=None, best_params=None):
 
     for trial in range(num_trials):
@@ -94,7 +178,10 @@ def random_search(params, num_trials, best_time=None, best_params=None):
             print(f"Optimized cost (time): {best_time}")
 
     else:
-        res = Res(best_params, best_time)
+        if type(best_params) == list:
+            for idx, key in enumerate(params):
+                params[key]['value'] = best_params[idx]
+        res = Res(params, best_time)
     return res
 
 
@@ -106,11 +193,7 @@ def exhaustive_search(params, num, best_time=None, best_params=None):
             params[key]['range'] = np.linspace(params[key]['bounds'][0], params[key]['bounds'][1], num_spaces)
         else:
             params[key]['range'] = params[key]['bounds']
-
-    best_params = None
     iters = 0
-
-    # q:
 
     with multiprocessing.Pool() as pool:
         for res in pool.imap_unordered(run_race_simulation, itertools.product(*[params[key]['range'] for key in params])):
@@ -139,10 +222,12 @@ def exhaustive_search(params, num, best_time=None, best_params=None):
         else:
             for idx, key in enumerate(params):
                 params[key]['value'] = best_params[idx]
-            res = Res(best_params, best_time)
+            res = Res(params, best_time)
         return res
 
 
+# Helper method to create a tuple of parameter bounds in a range around the parameter
+# Accounts for strict boundaries
 def create_bounds_in_range(var, bounds, dist):
     lower, upper = bounds
     var_s = dist * var
@@ -158,6 +243,7 @@ def create_bounds_in_range(var, bounds, dist):
     return bounds
 
 
+# Method to perform random optimization on the local scale
 def optimize(method, params, num, dist=1, best_time=None, best_params=None):
     # Create local bounds for each parameter
 
