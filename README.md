@@ -3,8 +3,13 @@
 
 This is the GitHub repository for Kin Blandford, Hyrum Coleman, and Austin Neff's Numerical Methods project.
 
+# What's happening here?
 
-Here are the key files of this repo:
+The files in this repository optimizes 7 design parameters of a train in order to minimize the amount of time it takes for the train to travel 10 meters without exceeding 12 meters.
+We implemented random search and exhaustive search and used multiprocessing to speed up our computation time.
+
+
+# What files are in here?
 
 `main.py`:
 This script contains the initiation of our bounds and starting value in the params dictionary and the user input options for which optimization method they want to use. It also reads `race_times.csv` to get the best params from previous runs as a starting point.
