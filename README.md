@@ -22,3 +22,8 @@ This script contains the necessary equations of motion to simulate the motion of
 
 `rk4.py`:
 This script is our rk4 method that solves the ODE's in `train_motion.py`
+
+
+# Can I use the stuff here?
+
+The repository is public so you are of course able to browse the code and even pull it down to examine it more closely. However, this repository is for educational use ***ONLY***. We do not condone anyone using our code for their academic projects.
